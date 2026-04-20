@@ -834,7 +834,6 @@ const PASS = "1234";
 function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
   if (email === USER && password === PASS) {
     localStorage.setItem("auth", "true");
     document.getElementById("loginScreen").style.display = "none";
@@ -842,12 +841,8 @@ function login() {
     document.getElementById("error").innerText = "Datos incorrectos";
   }
 }
-
-window.onload = function () {
-  if (localStorage.getItem("auth") === "true") {
-    document.getElementById("loginScreen").style.display = "none";
-  }
-};
+// ⚠️ CORRECCIÓN: se eliminó el segundo window.onload que sobreescribía al principal
+// La lógica del login ahora se maneja dentro del window.onload principal (abajo en el script)
 </script>
 <!-- SETUP OVERLAY (shown when Firebase not configured) -->
 <div id="setup-overlay" style="display:none; position:fixed; inset:0; background:var(--cream); z-index:500; overflow-y:auto; padding:24px;">
@@ -1446,16 +1441,30 @@ function setDBStatus(ok) {
 // STARTUP
 // ══════════════════════════════════════════
 window.onload = async function() {
+  // ✅ CORRECCIÓN BUG #1: El segundo window.onload del login fue eliminado.
+  // Ahora el check de auth está unificado aquí, evitando que uno sobreescriba al otro.
+  if (localStorage.getItem("auth") === "true") {
+    document.getElementById("loginScreen").style.display = "none";
+  }
+
   setFechaHoy();
   const config = getFirebaseConfig();
   if (!config) {
     document.getElementById('setup-overlay').style.display = 'block';
     return;
   }
+
+  console.log('🔥 [Mallaviá] Iniciando Firebase - projectId:', config.projectId);
   const ok = initFirebase(config);
   if (ok) {
+    console.log('✅ [Mallaviá] Firebase conectado, cargando datos...');
     await cargarTodo();
+    // Si Firestore está vacío, precargar el catálogo del Excel
+    if (productos.length === 0) {
+      await precargarCatalogo();
+    }
   } else {
+    console.warn('⚠️ [Mallaviá] Firebase falló, modo local activado');
     modoLocal = true;
     setDBStatus(false);
     cargarDesdeLocal();
@@ -1507,24 +1516,84 @@ async function saveDoc(col, data, id=null) {
     try {
       if (id) { await db.collection(col).doc(id).set(data); return id; }
       else { const ref = await db.collection(col).add(data); return ref.id; }
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      // CORRECCION: error visible al usuario, no solo en consola
+      console.error('[Firebase] saveDoc error en coleccion ' + col + ':', e);
+      const msg = e.code === 'permission-denied' ? '❌ Firebase: Sin permisos. Revisá las reglas de Firestore.' :
+                  e.code === 'unavailable'       ? '❌ Firebase: Sin conexión a internet.' :
+                  '❌ Firebase error: ' + e.message;
+      toast(msg, 'error');
+      // Guardar local como fallback
+    }
   }
   return id || Date.now().toString();
 }
 
 async function updateDoc(col, id, data) {
   if (db && !modoLocal) {
-    try { await db.collection(col).doc(id).update(data); } catch(e) { console.error(e); }
+    try { await db.collection(col).doc(id).update(data); } catch(e) {
+      console.error('[Firebase] updateDoc error en ' + col + '/' + id + ':', e);
+      const msg = e.code === 'permission-denied' ? '❌ Firebase: Sin permisos. Revisá reglas Firestore.' :
+                  '❌ Firebase update error: ' + e.message;
+      toast(msg, 'error');
+    }
   }
 }
 
 async function deleteDoc(col, id) {
   if (db && !modoLocal) {
-    try { await db.collection(col).doc(id).delete(); } catch(e) { console.error(e); }
+    try { await db.collection(col).doc(id).delete(); } catch(e) { console.error('[Firebase] deleteDoc error:', e); }
   }
 }
 
 // ══════════════════════════════════════════
+// PRODUCTOS PRECARGADOS DEL CATALOGO (Abril 2026 - Vinos_1.xlsx)
+// Se usan solo si Firebase no tiene datos y el localStorage está vacío
+const CATALOGO_INICIAL = [
+  {nombre:'Alamos Malbec', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Malbec', precio:5840, costo:4550, stock:23, stockMin:6},
+  {nombre:'Angelica Zapata Malbec 2021 x 4', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Malbec', precio:23750, costo:18667, stock:16, stockMin:4},
+  {nombre:'Angelica Zapata Cabernet Franc 2021 x 4', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Cabernet Franc', precio:21250, costo:16542, stock:36, stockMin:4},
+  {nombre:'El Enemigo Malbec', tipo:'Tinto', bodega:'Clos de los Siete', varietal:'Malbec', precio:20100, costo:15768, stock:8, stockMin:3},
+  {nombre:'Gran Enemigo Cabernet Franc', tipo:'Tinto', bodega:'Clos de los Siete', varietal:'Cabernet Franc', precio:45000, costo:34750, stock:6, stockMin:3},
+  {nombre:'DV Catena Cabernet/Malbec', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Blend', precio:12000, costo:9832, stock:18, stockMin:6},
+  {nombre:'Nicasia Cabernet Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:7050, costo:5521, stock:40, stockMin:6},
+  {nombre:'Nicasia Gran Blend', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:10150, costo:7958, stock:32, stockMin:6},
+  {nombre:'Nicasia Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:7050, costo:5521, stock:30, stockMin:6},
+  {nombre:'Nicasia Blanc de Blancs', tipo:'Blanco', bodega:'La Rural', varietal:'Blend', precio:7050, costo:5521, stock:18, stockMin:6},
+  {nombre:'Rutini Cabernet Sauvignon/Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:14600, costo:10387, stock:11, stockMin:6},
+  {nombre:'Rutini Dominio Malbec 2022', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:20980, costo:15950, stock:17, stockMin:3},
+  {nombre:'Rutini Encuentro Cabernet Sauvignon', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Sauvignon', precio:11400, costo:8700, stock:12, stockMin:6},
+  {nombre:'Rutini Encuentro Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:11400, costo:8700, stock:6, stockMin:6},
+  {nombre:'Rutini Sauvignon Blanc 2024', tipo:'Blanco', bodega:'La Rural', varietal:'Sauvignon Blanc', precio:15900, costo:12470, stock:0, stockMin:3},
+  {nombre:'Saint Felicien Cabernet Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:9000, costo:7042, stock:8, stockMin:6},
+  {nombre:'Saint Felicien Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:9000, costo:7042, stock:24, stockMin:6},
+  {nombre:'Saint Felicien Pinot Noir', tipo:'Tinto', bodega:'La Rural', varietal:'Pinot Noir', precio:9000, costo:7042, stock:28, stockMin:6},
+  {nombre:'Saint Felicien Syrah-Malbec Rose x 4', tipo:'Rosado', bodega:'La Rural', varietal:'Rosé', precio:22000, costo:16321, stock:4, stockMin:4},
+  {nombre:'Sam Felipe 12 Uvas', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:4700, costo:3596, stock:20, stockMin:6},
+  {nombre:'San Felipe Blanco', tipo:'Blanco', bodega:'La Rural', varietal:'Blanco', precio:4700, costo:3596, stock:12, stockMin:6},
+  {nombre:'San Felipe Tinto', tipo:'Tinto', bodega:'La Rural', varietal:'Tinto', precio:4700, costo:3596, stock:6, stockMin:6},
+  {nombre:'Trumpeter Cab. Sauvignon', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Sauvignon', precio:7400, costo:5774, stock:60, stockMin:6},
+  {nombre:'Trumpeter Cabernet/Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:7400, costo:5774, stock:66, stockMin:6},
+  {nombre:'Trumpeter Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:7400, costo:5774, stock:78, stockMin:6},
+  {nombre:'Trumpeter Merlot', tipo:'Tinto', bodega:'La Rural', varietal:'Merlot', precio:7400, costo:0, stock:18, stockMin:6},
+  {nombre:'Trumpeter Syrah', tipo:'Tinto', bodega:'La Rural', varietal:'Syrah', precio:7400, costo:5774, stock:36, stockMin:6},
+  {nombre:'Trumpeter Sauvignon Blanc', tipo:'Blanco', bodega:'La Rural', varietal:'Sauvignon Blanc', precio:7400, costo:5774, stock:12, stockMin:6},
+  {nombre:'Cerveza Corona x 330 Pack x 6 Botellas', tipo:'Cerveza', bodega:'AB InBev', varietal:'Lager', precio:2600, costo:2100, stock:99, stockMin:12},
+  {nombre:'Cerveza Corona 0 x 330 Pack x 4 Botellas', tipo:'Cerveza', bodega:'AB InBev', varietal:'Lager', precio:2140, costo:1700, stock:18, stockMin:8},
+];
+
+async function precargarCatalogo() {
+  if (productos.length > 0) return; // ya hay datos, no sobreescribir
+  console.log('[Mallaviá] Precargando catálogo inicial (' + CATALOGO_INICIAL.length + ' productos)...');
+  for (const p of CATALOGO_INICIAL) {
+    const id = await saveDoc('productos', p);
+    productos.push({id, ...p});
+  }
+  productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+  guardarLocal();
+  console.log('[Mallaviá] Catálogo precargado.');
+}
+
 // LOCAL STORAGE FALLBACK
 // ══════════════════════════════════════════
 function guardarLocal() {
@@ -1858,6 +1927,14 @@ function editarProducto(id) {
 }
 
 async function guardarProducto() {
+  // CORRECCION BUG #3: logs claros para detectar fallos
+  console.log('[guardarProducto] Iniciando...');
+  console.log('[guardarProducto] Firebase db:', db ? 'conectado' : 'NULL - no guardara en Firebase', '| modoLocal:', modoLocal);
+  if (!db && !modoLocal) {
+    toast('⚠️ Firebase no conectado. Configurá Firebase en ⚙ Config primero.', 'error');
+    return;
+  }
+
   const id = document.getElementById('prod-id').value;
   const nombre = document.getElementById('prod-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio','error'); return; }
@@ -1876,21 +1953,31 @@ async function guardarProducto() {
     stockMin: parseInt(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT
   };
 
-  if (id) {
-    await updateDoc('productos', id, data);
-    const idx = productos.findIndex(p => p.id===id);
-    if (idx>=0) productos[idx] = {...productos[idx],...data};
-  } else {
-    const newId = await saveDoc('productos', data);
-    productos.push({id:newId,...data});
-    productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
-  }
+  console.log('[guardarProducto] Datos:', JSON.stringify(data));
 
-  guardarLocal();
-  cerrarModal('modal-producto');
-  renderStock();
-  renderVentasGrid();
-  toast('✅ Producto guardado', 'success');
+  try {
+    if (id) {
+      console.log('[guardarProducto] Actualizando ID:', id);
+      await updateDoc('productos', id, data);
+      const idx = productos.findIndex(p => p.id===id);
+      if (idx>=0) productos[idx] = {...productos[idx],...data};
+    } else {
+      console.log('[guardarProducto] Creando nuevo producto...');
+      const newId = await saveDoc('productos', data);
+      console.log('[guardarProducto] Nuevo ID:', newId);
+      productos.push({id:newId,...data});
+      productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+    }
+    guardarLocal();
+    cerrarModal('modal-producto');
+    renderStock();
+    renderVentasGrid();
+    console.log('[guardarProducto] Guardado exitoso');
+    toast('✅ Producto guardado correctamente', 'success');
+  } catch(err) {
+    console.error('[guardarProducto] ERROR:', err);
+    toast('Error al guardar: ' + err.message, 'error');
+  }
 }
 
 function abrirAjuste(id, nombre, actual) {
@@ -1933,60 +2020,41 @@ function importarExcel(input) {
   reader.onload = async function(e) {
     try {
       const wb = XLSX.read(e.target.result, {type:'binary'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      console.log('\ud83d\udcca [Excel] Hojas encontradas:', wb.SheetNames);
 
-      if (!data.length) { toast('El archivo está vacío','error'); return; }
+      // CORRECCIÓN BUG #2: detecta el formato real de Vinos_1.xlsx (hoja "Precios")
+      const sheetName = wb.SheetNames.includes('Precios') ? 'Precios' : wb.SheetNames[0];
+      console.log('\ud83d\udcca [Excel] Usando hoja:', sheetName);
+      const ws = wb.Sheets[sheetName];
 
-      // Detectar columnas automáticamente (case-insensitive)
-      const sampleRow = data[0];
-      const keys = Object.keys(sampleRow).map(k => k.toLowerCase());
-      const findCol = (opts) => {
-        for (const opt of opts) {
-          const found = Object.keys(sampleRow).find(k => k.toLowerCase().includes(opt));
-          if (found) return found;
-        }
-        return null;
-      };
+      const rawData = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      let filas = parsearFormatoMallaviá(rawData);
 
-      const colNombre = findCol(['nombre','producto','vino','descripcion','name','item']);
-      const colTipo = findCol(['tipo','categoria','category','type','varietal','uva']);
-      const colBodega = findCol(['bodega','marca','brand','winery','productor']);
-      const colPrecio = findCol(['precio','price','venta','pvp','value']);
-      const colCosto = findCol(['costo','cost','compra','wholesale']);
-      const colStock = findCol(['stock','cantidad','qty','quantity','inventario','unidades']);
-      const colMin = findCol(['minimo','min','alerta','critico']);
+      if (!filas.length) {
+        console.log('\u26a0\ufe0f [Excel] Formato Mallaviá no detectado, intentando genérico...');
+        const dataGen = XLSX.utils.sheet_to_json(ws, {defval:''});
+        filas = parsearFormatoGenerico(dataGen);
+      }
 
-      if (!colNombre) { toast('No se encontró la columna de nombre/producto','error'); return; }
+      if (!filas.length) {
+        toast('No se pudieron detectar productos en el Excel. Revisá el formato.', 'error');
+        return;
+      }
 
-      let importados = 0;
-      for (const row of data) {
-        const nombre = String(row[colNombre]||'').trim();
+      console.log('\u2705 [Excel]', filas.length, 'productos detectados');
+      let nuevos = 0, actualizados = 0;
+      for (const fila of filas) {
+        const nombre = fila.nombre;
         if (!nombre) continue;
-        const precio = parseFloat(String(row[colPrecio]||'0').replace(/[^\d.,]/g,'').replace(',','.')) || 0;
-        const stock = parseInt(row[colStock]||0) || 0;
-        const tipo = adivinarTipo(colTipo ? String(row[colTipo]||'') : nombre);
-
-        const data = {
-          nombre,
-          tipo,
-          bodega: colBodega ? String(row[colBodega]||'').trim() : '',
-          varietal: colTipo ? String(row[colTipo]||'').trim() : '',
-          precio,
-          costo: colCosto ? parseFloat(String(row[colCosto]||'0').replace(/[^\d.,]/g,'').replace(',','.')) || 0 : 0,
-          stock,
-          stockMin: colMin ? parseInt(row[colMin]||STOCK_MIN_DEFAULT) : STOCK_MIN_DEFAULT
-        };
-
-        // Ver si ya existe
-        const existente = productos.find(p => p.nombre.toLowerCase()===nombre.toLowerCase());
+        const existente = productos.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
         if (existente) {
-          await updateDoc('productos', existente.id, data);
-          Object.assign(existente, data);
+          await updateDoc('productos', existente.id, fila);
+          Object.assign(existente, fila);
+          actualizados++;
         } else {
-          const id = await saveDoc('productos', data);
-          productos.push({id,...data});
-          importados++;
+          const id = await saveDoc('productos', fila);
+          productos.push({id, ...fila});
+          nuevos++;
         }
       }
 
@@ -1994,23 +2062,143 @@ function importarExcel(input) {
       guardarLocal();
       renderStock();
       renderVentasGrid();
-      toast(`✅ Excel importado: ${importados} productos nuevos, ${data.length-importados} actualizados`, 'success');
+      toast('\u2705 Excel importado: ' + nuevos + ' productos nuevos, ' + actualizados + ' actualizados', 'success');
       input.value = '';
     } catch(err) {
-      console.error(err);
-      toast('Error al leer el Excel: '+err.message, 'error');
+      console.error('[Excel] Error:', err);
+      toast('Error al leer el Excel: ' + err.message, 'error');
     }
   };
   reader.readAsBinaryString(file);
 }
 
+// Parser para el formato real de Vinos_1.xlsx (hoja "Precios")
+// Busca el ULTIMO bloque de tabla (el más reciente por fecha)
+function parsearFormatoMallaviá(rawData) {
+  const resultados = [];
+  let ultimoBloque = -1;
+
+  for (let i = 0; i < rawData.length; i++) {
+    const fila = rawData[i];
+    const textos = fila.map(c => String(c||'').toLowerCase().trim());
+    if (textos.some(t => t === 'detalle') && textos.some(t => t === 'botella')) {
+      ultimoBloque = i;
+    }
+  }
+
+  if (ultimoBloque === -1) return [];
+
+  const encabezado = rawData[ultimoBloque];
+  let colDetalle=-1, colCaja=-1, colBotella=-1, colStock=-1, colCosto=-1;
+  encabezado.forEach((cel, idx) => {
+    const t = String(cel||'').toLowerCase().trim();
+    if (t === 'detalle') colDetalle = idx;
+    else if (t.includes('caja')) colCaja = idx;
+    else if (t === 'botella') colBotella = idx;
+    else if (t.includes('stock')) colStock = idx;
+    else if (t.includes('costo')) colCosto = idx;
+  });
+
+  console.log('[Mallaviá] Bloque fila', ultimoBloque, '-> Det:', colDetalle, 'Bot:', colBotella, 'Stk:', colStock, 'Costo:', colCosto);
+  if (colDetalle === -1 || colBotella === -1) return [];
+
+  for (let i = ultimoBloque + 1; i < rawData.length; i++) {
+    const fila = rawData[i];
+    const nombre = String(fila[colDetalle]||'').trim();
+    if (!nombre || nombre.toLowerCase() === 'total' || nombre.toLowerCase() === 'saldo') break;
+
+    const precio = colBotella !== -1 ? (parseFloat(fila[colBotella])||0) : 0;
+    const caja   = colCaja !== -1    ? (parseFloat(fila[colCaja])||0)    : 0;
+    const stock  = colStock !== -1   ? (parseInt(fila[colStock])||0)     : 0;
+    const costo  = colCosto !== -1   ? (parseFloat(fila[colCosto])||0)   : 0;
+
+    if (precio === 0 && caja === 0) continue;
+
+    resultados.push({
+      nombre,
+      tipo: adivinarTipo(nombre),
+      bodega: adivinarBodega(nombre),
+      varietal: adivinarVarietal(nombre),
+      precio: precio > 0 ? precio : (caja > 0 ? Math.round(caja/6) : 0),
+      costo,
+      stock,
+      stockMin: STOCK_MIN_DEFAULT
+    });
+  }
+  return resultados;
+}
+
+// Parser genérico (para excels con encabezados estándar)
+function parsearFormatoGenerico(data) {
+  if (!data.length) return [];
+  const sampleRow = data[0];
+  const findCol = (opts) => {
+    for (const opt of opts) {
+      const found = Object.keys(sampleRow).find(k => k.toLowerCase().includes(opt));
+      if (found) return found;
+    }
+    return null;
+  };
+  const colNombre = findCol(['detalle','nombre','producto','vino','name','item']);
+  const colBotella = findCol(['botella']);
+  const colPrecio = findCol(['precio','price','pvp','venta','value']);
+  const colCosto = findCol(['costo','cost','compra']);
+  const colStock = findCol(['stock','cantidad','qty','quantity','inventario']);
+  const colMin = findCol(['minimo','min','alerta']);
+  const colPrecioFinal = colBotella || colPrecio;
+  if (!colNombre || !colPrecioFinal) return [];
+
+  return data.map(row => {
+    const nombre = String(row[colNombre]||'').trim();
+    if (!nombre || nombre.toLowerCase() === 'total') return null;
+    const precio = parseFloat(String(row[colPrecioFinal]||'0').replace(/[^\d.]/g,''))||0;
+    if (!precio) return null;
+    return {
+      nombre,
+      tipo: adivinarTipo(nombre),
+      bodega: adivinarBodega(nombre),
+      varietal: adivinarVarietal(nombre),
+      precio,
+      costo: colCosto ? parseFloat(String(row[colCosto]||'0').replace(/[^\d.]/g,''))||0 : 0,
+      stock: colStock ? parseInt(row[colStock])||0 : 0,
+      stockMin: colMin ? parseInt(row[colMin])||STOCK_MIN_DEFAULT : STOCK_MIN_DEFAULT
+    };
+  }).filter(Boolean);
+}
+
+function adivinarBodega(nombre) {
+  const n = nombre.toLowerCase();
+  if (n.includes('alamos') || n.includes('angelica zapata') || n.includes('dv catena') || n.includes('catena')) return 'Catena Zapata';
+  if (n.includes('rutini') || n.includes('trumpeter') || n.includes('nicasia') || n.includes('saint felicien') || n.includes('san felipe') || n.includes('sam felipe')) return 'La Rural';
+  if (n.includes('enemigo') || n.includes('gran enemigo')) return 'Clos de los Siete';
+  if (n.includes('uxmal')) return 'Bodegas Esmeralda';
+  if (n.includes('corona')) return 'AB InBev';
+  return '';
+}
+
+function adivinarVarietal(nombre) {
+  const n = nombre.toLowerCase();
+  if (n.includes('malbec')) return 'Malbec';
+  if (n.includes('cabernet franc')) return 'Cabernet Franc';
+  if (n.includes('cabernet sauvignon') || n.includes('cab. sauvignon')) return 'Cabernet Sauvignon';
+  if (n.includes('syrah')) return 'Syrah';
+  if (n.includes('merlot')) return 'Merlot';
+  if (n.includes('pinot noir')) return 'Pinot Noir';
+  if (n.includes('sauvignon blanc')) return 'Sauvignon Blanc';
+  if (n.includes('chardonnay')) return 'Chardonnay';
+  if (n.includes('rose') || n.includes('ros\u00e9')) return 'Ros\u00e9';
+  if (n.includes('blend') || n.includes('gran blend')) return 'Blend';
+  if (n.includes('cerveza') || n.includes('corona')) return 'Lager';
+  return '';
+}
+
 function adivinarTipo(texto) {
   const t = texto.toLowerCase();
-  if (t.includes('tinto') || t.includes('malbec') || t.includes('cabernet') || t.includes('syrah') || t.includes('merlot') || t.includes('bonarda') || t.includes('pinot n')) return 'Tinto';
-  if (t.includes('blanco') || t.includes('chardonnay') || t.includes('torrontés') || t.includes('sauvignon') || t.includes('viognier') || t.includes('pinot g')) return 'Blanco';
-  if (t.includes('rosado') || t.includes('rose') || t.includes('rosé')) return 'Rosado';
-  if (t.includes('espumante') || t.includes('champagne') || t.includes('chandon') || t.includes('brut') || t.includes('extra')) return 'Espumante';
-  if (t.includes('cerveza') || t.includes('beer') || t.includes('lager') || t.includes('ipa')) return 'Cerveza';
+  if (t.includes('malbec') || t.includes('cabernet') || t.includes('syrah') || t.includes('merlot') || t.includes('pinot noir') || t.includes('bonarda') || t.includes('tinto') || t.includes('enemigo') || t.includes('blend')) return 'Tinto';
+  if (t.includes('blanco') || t.includes('chardonnay') || t.includes('torront') || t.includes('sauvignon blanc') || t.includes('viognier') || t.includes('pinot g') || t.includes('blanc de blancs')) return 'Blanco';
+  if (t.includes('rosado') || t.includes('rose') || t.includes('ros\u00e9')) return 'Rosado';
+  if (t.includes('espumante') || t.includes('champagne') || t.includes('chandon') || t.includes('brut')) return 'Espumante';
+  if (t.includes('cerveza') || t.includes('beer') || t.includes('lager') || t.includes('corona') || t.includes('ipa')) return 'Cerveza';
   return 'Otro';
 }
 
