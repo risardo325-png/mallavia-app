@@ -744,21 +744,89 @@
   left:0;
   width:100%;
   height:100%;
-  background:#111;
-  color:white;
+  background:radial-gradient(circle at top, #6B1A2A, #1a0d0d);
   display:flex;
-  flex-direction:column;
   justify-content:center;
   align-items:center;
   z-index:9999;
+  font-family:'Inter', sans-serif;
 ">
-  <h2>Mallavia Wines</h2>
-  <input id="email" type="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Contraseña">
-  <button onclick="login()">Ingresar</button>
-  <p id="error" style="color:red;"></p>
-</div>
 
+  <div style="
+    background:rgba(255,255,255,0.95);
+    backdrop-filter:blur(10px);
+    padding:40px 30px;
+    border-radius:14px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+    width:320px;
+    text-align:center;
+  ">
+
+    <h1 style="
+      color:#6B1A2A;
+      font-size:22px;
+      letter-spacing:2px;
+      margin-bottom:5px;
+    ">
+      MALLAVIA
+    </h1>
+
+    <p style="
+      color:#C9A96E;
+      font-size:12px;
+      letter-spacing:3px;
+      margin-bottom:25px;
+    ">
+      WINES
+    </p>
+
+    <input id="email" type="email" placeholder="Email" style="
+      width:100%;
+      padding:12px;
+      margin-bottom:12px;
+      border:none;
+      border-bottom:1px solid #ddd;
+      background:transparent;
+      outline:none;
+    ">
+
+    <input id="password" type="password" placeholder="Contraseña" style="
+      width:100%;
+      padding:12px;
+      margin-bottom:25px;
+      border:none;
+      border-bottom:1px solid #ddd;
+      background:transparent;
+      outline:none;
+    ">
+
+    <button onclick="login()" style="
+      width:100%;
+      padding:12px;
+      background:linear-gradient(135deg,#6B1A2A,#4A0F1C);
+      color:white;
+      border:none;
+      border-radius:30px;
+      font-weight:600;
+      letter-spacing:1px;
+      cursor:pointer;
+      transition:0.3s;
+    "
+    onmouseover="this.style.opacity='0.85'"
+    onmouseout="this.style.opacity='1'"
+    >
+      Ingresar
+    </button>
+
+    <p id="error" style="
+      color:#C1121F;
+      margin-top:15px;
+      font-size:12px;
+    "></p>
+
+  </div>
+
+</div>
 <script>
 const USER = "admin@mallavia.com";
 const PASS = "1234";
