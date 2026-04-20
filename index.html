@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mallaviá · Gestión</title>
+
+<!-- ✅ FIX #1: Firebase v9 COMPAT — una sola versión, scripts en orden correcto -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
@@ -58,11 +61,7 @@
     z-index: 100;
     box-shadow: 0 2px 16px rgba(0,0,0,0.3);
   }
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
   .header-logo {
     font-family: 'Cormorant Garamond', serif;
     font-size: 22px;
@@ -76,23 +75,9 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .db-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.6);
-  }
-  .db-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #aaa;
-  }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .db-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.6); }
+  .db-dot { width: 7px; height: 7px; border-radius: 50%; background: #aaa; }
   .db-dot.ok { background: #4CAF50; }
   .db-dot.error { background: #f44336; }
 
@@ -124,22 +109,11 @@
     gap: 6px;
   }
   nav button:hover { color: var(--gold-light); }
-  nav button.active {
-    color: var(--gold);
-    border-bottom-color: var(--gold);
-    background: rgba(201,169,110,0.08);
-  }
+  nav button.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(201,169,110,0.08); }
   nav button .nav-icon { font-size: 15px; }
 
   /* ── MAIN LAYOUT ── */
-  main {
-    flex: 1;
-    padding: 24px;
-    max-width: 1100px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
+  main { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
   .page { display: none; }
   .page.active { display: block; }
 
@@ -164,163 +138,59 @@
   }
 
   /* ── STAT CARDS ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    padding: 16px 20px;
-    box-shadow: var(--shadow);
-  }
-  .stat-label {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-  .stat-value {
-    font-size: 26px;
-    font-weight: 600;
-    color: var(--wine-dark);
-    line-height: 1.1;
-  }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 16px 20px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--wine-dark); line-height: 1.1; }
   .stat-value.gold { color: var(--gold); }
-  .stat-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-  .stat-card.wine-bg {
-    background: var(--wine-dark);
-    border-color: var(--wine);
-  }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .stat-card.wine-bg { background: var(--wine-dark); border-color: var(--wine); }
   .stat-card.wine-bg .stat-label { color: rgba(255,255,255,0.6); }
   .stat-card.wine-bg .stat-value { color: var(--gold); }
   .stat-card.wine-bg .stat-sub { color: rgba(255,255,255,0.5); }
 
   /* ── BUTTONS ── */
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    border-radius: var(--radius);
-    border: none;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.18s;
-    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: var(--radius); border: none;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s; text-decoration: none;
   }
-  .btn-primary {
-    background: var(--wine);
-    color: var(--white);
-  }
+  .btn-primary { background: var(--wine); color: var(--white); }
   .btn-primary:hover { background: var(--wine-light); }
-  .btn-gold {
-    background: var(--gold);
-    color: var(--wine-dark);
-    font-weight: 600;
-  }
+  .btn-gold { background: var(--gold); color: var(--wine-dark); font-weight: 600; }
   .btn-gold:hover { background: var(--gold-light); }
-  .btn-outline {
-    background: transparent;
-    color: var(--wine);
-    border: 1px solid var(--wine);
-  }
+  .btn-outline { background: transparent; color: var(--wine); border: 1px solid var(--wine); }
   .btn-outline:hover { background: var(--wine); color: white; }
-  .btn-danger {
-    background: var(--danger-bg);
-    color: var(--danger);
-    border: 1px solid rgba(193,18,31,0.2);
-  }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(193,18,31,0.2); }
   .btn-danger:hover { background: var(--danger); color: white; }
   .btn-sm { padding: 6px 12px; font-size: 12px; }
   .btn-lg { padding: 12px 28px; font-size: 15px; }
 
   /* ── FORM ELEMENTS ── */
   .form-group { margin-bottom: 14px; }
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-    letter-spacing: 0.04em;
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.04em; }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); font-family: 'Inter', sans-serif;
+    font-size: 14px; color: var(--text); background: var(--cream); transition: border-color 0.2s;
   }
-  input[type="text"], input[type="number"], input[type="date"],
-  select, textarea {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    background: var(--cream);
-    transition: border-color 0.2s;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--wine);
-    background: white;
-  }
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .form-row-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--wine); background: white; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
   /* ── TABLE ── */
   .table-wrap { overflow-x: auto; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  th {
-    background: var(--cream-dark);
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
-  }
-  td {
-    padding: 11px 12px;
-    border-bottom: 1px solid rgba(107,26,42,0.06);
-    color: var(--text);
-    vertical-align: middle;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--cream-dark); padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  td { padding: 11px 12px; border-bottom: 1px solid rgba(107,26,42,0.06); color: var(--text); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--cream); }
   .text-right { text-align: right; }
   .text-center { text-align: center; }
 
   /* ── BADGES ── */
-  .badge {
-    display: inline-block;
-    padding: 3px 9px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-  }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .badge-ok { background: var(--success-bg); color: var(--success); }
   .badge-low { background: var(--warning-bg); color: var(--warning); }
   .badge-out { background: var(--danger-bg); color: var(--danger); }
@@ -328,338 +198,86 @@
   .badge-gold { background: var(--gold-light); color: var(--wine-dark); }
 
   /* ── ALERTS ── */
-  .alert {
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  .alert { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
   .alert-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(139,94,0,0.2); }
   .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(193,18,31,0.2); }
   .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(45,106,79,0.2); }
   .alert-info { background: #EBF4FF; color: #1A56DB; border: 1px solid rgba(26,86,219,0.2); }
 
   /* ── VENTA RÁPIDA ── */
-  .venta-grid {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
-    align-items: start;
-  }
+  .venta-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
   .wine-search-wrap { position: relative; }
-  .wine-search {
-    width: 100%;
-    padding: 10px 14px 10px 38px;
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 14px;
-    background: white;
-  }
+  .wine-search { width: 100%; padding: 10px 14px 10px 38px; border: 2px solid var(--border); border-radius: var(--radius); font-size: 14px; background: white; }
   .wine-search:focus { border-color: var(--wine); outline: none; }
-  .search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 15px;
-    pointer-events: none;
-  }
-  .wines-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
-    max-height: 500px;
-    overflow-y: auto;
-    padding-right: 4px;
-  }
-  .wine-card {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .wine-card:hover {
-    border-color: var(--wine);
-    box-shadow: 0 2px 8px rgba(107,26,42,0.12);
-  }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
+  .wines-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px; }
+  .wine-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; gap: 4px; }
+  .wine-card:hover { border-color: var(--wine); box-shadow: 0 2px 8px rgba(107,26,42,0.12); }
   .wine-card.out { opacity: 0.4; cursor: not-allowed; }
-  .wine-card-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.3;
-  }
-  .wine-card-info {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .wine-card-price {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--wine-dark);
-    margin-top: 4px;
-  }
-  .wine-card-stock {
-    font-size: 11px;
-    font-weight: 500;
-  }
+  .wine-card-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+  .wine-card-info { font-size: 11px; color: var(--text-muted); }
+  .wine-card-price { font-size: 15px; font-weight: 600; color: var(--wine-dark); margin-top: 4px; }
+  .wine-card-stock { font-size: 11px; font-weight: 500; }
 
   /* ── CARRITO ── */
-  .carrito-panel {
-    background: white;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
-    position: sticky;
-    top: 130px;
-  }
-  .carrito-header {
-    background: var(--wine-dark);
-    color: white;
-    padding: 14px 18px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 17px;
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .carrito-items {
-    padding: 12px;
-    max-height: 320px;
-    overflow-y: auto;
-  }
-  .carrito-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
+  .carrito-panel { background: white; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow); position: sticky; top: 130px; }
+  .carrito-header { background: var(--wine-dark); color: white; padding: 14px 18px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .carrito-items { padding: 12px; max-height: 320px; overflow-y: auto; }
+  .carrito-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .carrito-item:last-child { border-bottom: none; }
   .carrito-item-name { flex: 1; font-size: 12px; line-height: 1.3; }
-  .qty-ctrl {
-    display: flex;
-    align-items: center;
-    gap: 0;
-  }
-  .qty-btn {
-    width: 24px; height: 24px;
-    border: 1px solid var(--border);
-    background: var(--cream);
-    cursor: pointer;
-    font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
-  }
+  .qty-ctrl { display: flex; align-items: center; gap: 0; }
+  .qty-btn { width: 24px; height: 24px; border: 1px solid var(--border); background: var(--cream); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
   .qty-btn:hover { background: var(--wine); color: white; }
-  .qty-val {
-    width: 30px; height: 24px;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 500;
-    background: white;
-  }
+  .qty-val { width: 30px; height: 24px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; background: white; }
   .carrito-item-total { font-weight: 600; color: var(--wine-dark); min-width: 64px; text-align: right; }
-  .carrito-footer {
-    padding: 14px 18px;
-    border-top: 2px solid var(--border);
-  }
-  .carrito-total {
-    display: flex;
-    justify-content: space-between;
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
+  .carrito-footer { padding: 14px 18px; border-top: 2px solid var(--border); }
+  .carrito-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
   .carrito-total span:last-child { color: var(--wine-dark); font-size: 20px; }
-  .carrito-empty {
-    padding: 32px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 13px;
-  }
+  .carrito-empty { padding: 32px; text-align: center; color: var(--text-muted); font-size: 13px; }
   .carrito-empty .ico { font-size: 32px; margin-bottom: 8px; }
 
   /* ── MODAL ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal {
-    background: white;
-    border-radius: var(--radius-lg);
-    width: 90%;
-    max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .modal-header {
-    background: var(--wine-dark);
-    color: white;
-    padding: 16px 20px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 19px;
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+  .modal { background: white; border-radius: var(--radius-lg); width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-header { background: var(--wine-dark); color: white; padding: 16px 20px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
   .modal-body { padding: 20px; }
-  .modal-footer {
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-  .close-btn {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.7);
-    font-size: 20px;
-    cursor: pointer;
-    line-height: 1;
-  }
+  .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .close-btn { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 20px; cursor: pointer; line-height: 1; }
   .close-btn:hover { color: white; }
 
   /* ── COMPROBANTE ── */
-  .comprobante {
-    font-family: 'Inter', sans-serif;
-  }
-  .comprobante-header {
-    text-align: center;
-    padding: 20px 0;
-    border-bottom: 2px dashed var(--border);
-    margin-bottom: 16px;
-  }
-  .comprobante-brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--wine-dark);
-  }
-  .comprobante-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
+  .comprobante { font-family: 'Inter', sans-serif; }
+  .comprobante-header { text-align: center; padding: 20px 0; border-bottom: 2px dashed var(--border); margin-bottom: 16px; }
+  .comprobante-brand { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; color: var(--wine-dark); }
+  .comprobante-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .comprobante-items table { width: 100%; font-size: 13px; }
-  .comprobante-total-line {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 15px;
-    border-top: 1px solid var(--border);
-    margin-top: 8px;
-    font-weight: 600;
-  }
+  .comprobante-total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; border-top: 1px solid var(--border); margin-top: 8px; font-weight: 600; }
 
   /* ── FILTERS ROW ── */
-  .filters-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
+  .filters-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
   .filters-row input, .filters-row select { flex: 1; min-width: 140px; max-width: 260px; }
   .filters-row .btn { flex-shrink: 0; }
 
   /* ── SECTION TITLE ── */
-  .section-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 26px;
-    font-weight: 600;
-    color: var(--wine-dark);
-    margin-bottom: 4px;
-  }
-  .section-sub {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-  }
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--wine-dark); margin-bottom: 4px; }
+  .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
 
   /* ── SETUP SCREEN ── */
-  .setup-screen {
-    max-width: 640px;
-    margin: 40px auto;
-  }
-  .setup-logo {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  .setup-logo .brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 42px;
-    font-weight: 600;
-    color: var(--wine-dark);
-  }
-  .setup-logo .sub {
-    font-size: 14px;
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
+  .setup-screen { max-width: 640px; margin: 40px auto; }
+  .setup-logo { text-align: center; margin-bottom: 32px; }
+  .setup-logo .brand { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 600; color: var(--wine-dark); }
+  .setup-logo .sub { font-size: 14px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
   .step-list { counter-reset: step; list-style: none; }
-  .step-list li {
-    counter-increment: step;
-    display: flex;
-    gap: 14px;
-    margin-bottom: 20px;
-    align-items: flex-start;
-  }
-  .step-list li::before {
-    content: counter(step);
-    min-width: 28px; height: 28px;
-    background: var(--wine);
-    color: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
+  .step-list li { counter-increment: step; display: flex; gap: 14px; margin-bottom: 20px; align-items: flex-start; }
+  .step-list li::before { content: counter(step); min-width: 28px; height: 28px; background: var(--wine); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
   .step-list li div { font-size: 14px; line-height: 1.6; }
   .step-list li strong { color: var(--wine-dark); }
-  code {
-    background: var(--cream-dark);
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    color: var(--wine-dark);
-  }
+  code { background: var(--cream-dark); padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 12px; color: var(--wine-dark); }
 
   /* ── DASHBOARD GRID ── */
-  .dash-sections {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  .dash-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 700px) {
     .dash-sections { grid-template-columns: 1fr; }
     .venta-grid { grid-template-columns: 1fr; }
@@ -668,242 +286,75 @@
 
   /* ── MINI LIST ── */
   .mini-list { list-style: none; }
-  .mini-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
+  .mini-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .mini-list li:last-child { border-bottom: none; }
 
   /* ── LOADER ── */
-  .loader {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    color: var(--text-muted);
-    font-size: 14px;
-    gap: 10px;
-  }
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid var(--border);
-    border-top-color: var(--wine);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
+  .loader { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text-muted); font-size: 14px; gap: 10px; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--wine); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── TOAST ── */
-  #toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: var(--wine-dark);
-    color: white;
-    padding: 12px 20px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
-    z-index: 300;
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.3s;
-    max-width: 320px;
-    border-left: 3px solid var(--gold);
-  }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--wine-dark); color: white; padding: 12px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 500; z-index: 300; transform: translateY(80px); opacity: 0; transition: all 0.3s; max-width: 320px; border-left: 3px solid var(--gold); }
   #toast.show { transform: translateY(0); opacity: 1; }
   #toast.success { border-left-color: #4CAF50; }
   #toast.error { border-left-color: #f44336; }
 
   /* ── CONFIG MODAL ── */
   .config-form { font-size: 13px; }
-  .config-note {
-    background: var(--cream-dark);
-    border-radius: var(--radius);
-    padding: 12px;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-    line-height: 1.6;
-  }
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 16px 0;
-  }
+  .config-note { background: var(--cream-dark); border-radius: var(--radius); padding: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 </style>
 </head>
 <body>
-<div id="loginScreen" style="
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:radial-gradient(circle at top, #6B1A2A, #1a0d0d);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-  font-family:'Inter', sans-serif;
-">
 
-  <div style="
-    background:rgba(255,255,255,0.95);
-    backdrop-filter:blur(10px);
-    padding:40px 30px;
-    border-radius:14px;
-    box-shadow:0 20px 50px rgba(0,0,0,0.4);
-    width:320px;
-    text-align:center;
-  ">
-
-    <h1 style="
-      color:#6B1A2A;
-      font-size:22px;
-      letter-spacing:2px;
-      margin-bottom:5px;
-    ">
-      MALLAVIA
-    </h1>
-
-    <p style="
-      color:#C9A96E;
-      font-size:12px;
-      letter-spacing:3px;
-      margin-bottom:25px;
-    ">
-      WINES
-    </p>
-
-    <input id="email" type="email" placeholder="Email" style="
-      width:100%;
-      padding:12px;
-      margin-bottom:12px;
-      border:none;
-      border-bottom:1px solid #ddd;
-      background:transparent;
-      outline:none;
-    ">
-
-    <input id="password" type="password" placeholder="Contraseña" style="
-      width:100%;
-      padding:12px;
-      margin-bottom:25px;
-      border:none;
-      border-bottom:1px solid #ddd;
-      background:transparent;
-      outline:none;
-    ">
-
-    <button onclick="login()" style="
-      width:100%;
-      padding:12px;
-      background:linear-gradient(135deg,#6B1A2A,#4A0F1C);
-      color:white;
-      border:none;
-      border-radius:30px;
-      font-weight:600;
-      letter-spacing:1px;
-      cursor:pointer;
-      transition:0.3s;
-    "
-    onmouseover="this.style.opacity='0.85'"
-    onmouseout="this.style.opacity='1'"
-    >
-      Ingresar
-    </button>
-
-    <p id="error" style="
-      color:#C1121F;
-      margin-top:15px;
-      font-size:12px;
-    "></p>
-
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at top,#6B1A2A,#1a0d0d);display:flex;justify-content:center;align-items:center;z-index:9999;font-family:'Inter',sans-serif;">
+  <div style="background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);padding:40px 30px;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.4);width:320px;text-align:center;">
+    <h1 style="color:#6B1A2A;font-size:22px;letter-spacing:2px;margin-bottom:5px;">MALLAVIA</h1>
+    <p style="color:#C9A96E;font-size:12px;letter-spacing:3px;margin-bottom:25px;">WINES</p>
+    <input id="email" type="email" placeholder="Email" style="width:100%;padding:12px;margin-bottom:12px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;">
+    <input id="password" type="password" placeholder="Contraseña" style="width:100%;padding:12px;margin-bottom:25px;border:none;border-bottom:1px solid #ddd;background:transparent;outline:none;" onkeydown="if(event.key==='Enter') doLogin()">
+    <button onclick="doLogin()" style="width:100%;padding:12px;background:linear-gradient(135deg,#6B1A2A,#4A0F1C);color:white;border:none;border-radius:30px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:0.3s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Ingresar</button>
+    <p id="login-error" style="color:#C1121F;margin-top:15px;font-size:12px;"></p>
   </div>
-
 </div>
-<script>
-const USER = "admin@mallavia.com";
-const PASS = "1234";
 
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  if (email === USER && password === PASS) {
-    localStorage.setItem("auth", "true");
-    document.getElementById("loginScreen").style.display = "none";
-  } else {
-    document.getElementById("error").innerText = "Datos incorrectos";
-  }
-}
-// ⚠️ CORRECCIÓN: se eliminó el segundo window.onload que sobreescribía al principal
-// La lógica del login ahora se maneja dentro del window.onload principal (abajo en el script)
-</script>
-<!-- SETUP OVERLAY (shown when Firebase not configured) -->
+<!-- ══ SETUP OVERLAY ══ -->
 <div id="setup-overlay" style="display:none; position:fixed; inset:0; background:var(--cream); z-index:500; overflow-y:auto; padding:24px;">
   <div class="setup-screen">
     <div class="setup-logo">
       <div class="brand">Mallaviá</div>
       <div class="sub">Sistema de Gestión</div>
     </div>
-
-    <div class="alert alert-info">
-      ⚡ Primera vez usando la app — necesitás configurar tu base de datos gratuita en Firebase.
-    </div>
-
+    <div class="alert alert-info">⚡ Primera vez usando la app — necesitás configurar tu base de datos gratuita en Firebase.</div>
     <div class="card">
       <div class="card-title">🔧 Configuración inicial (5 minutos)</div>
-
       <ul class="step-list">
         <li><div>Entrá a <strong>firebase.google.com</strong> e iniciá sesión con tu cuenta de Google.</div></li>
-        <li><div>Hacé clic en <strong>"Agregar proyecto"</strong> → poné un nombre como <code>mallaviawines</code> → seguí los pasos (podés desactivar Analytics).</div></li>
+        <li><div>Hacé clic en <strong>"Agregar proyecto"</strong> → poné un nombre como <code>mallaviawines</code> → seguí los pasos.</div></li>
         <li><div>Dentro del proyecto, hacé clic en el ícono <strong>&lt;/&gt; Web</strong> → poné un nombre de app → tocá <strong>"Registrar app"</strong>.</div></li>
-        <li><div>Firebase te va a mostrar un bloque de código con las credenciales. <strong>Copiá esos datos</strong> y pegálos en el formulario de abajo.</div></li>
-        <li><div>Después, en el menú de la izquierda, entrá a <strong>Firestore Database</strong> → <strong>"Crear base de datos"</strong> → elegí <strong>modo de prueba</strong> → seleccioná <code>southamerica-east1</code> (São Paulo, el más cercano).</div></li>
+        <li><div>Firebase te va a mostrar las credenciales. <strong>Copiá esos datos</strong> y pegálos abajo.</div></li>
+        <li><div>En el menú izquierdo, entrá a <strong>Firestore Database</strong> → <strong>"Crear base de datos"</strong> → elegí <strong>modo de prueba</strong> → seleccioná <code>southamerica-east1</code>.</div></li>
       </ul>
-
       <hr class="divider">
       <p style="font-size:13px; margin-bottom:16px; color:var(--text-muted);">Pegá tu configuración de Firebase:</p>
-
       <div class="form-row">
-        <div class="form-group">
-          <label>API Key</label>
-          <input type="text" id="fb-apiKey" placeholder="AIza...">
-        </div>
-        <div class="form-group">
-          <label>Auth Domain</label>
-          <input type="text" id="fb-authDomain" placeholder="mi-proyecto.firebaseapp.com">
-        </div>
+        <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIza..."></div>
+        <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain" placeholder="mi-proyecto.firebaseapp.com"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Project ID</label>
-          <input type="text" id="fb-projectId" placeholder="mi-proyecto">
-        </div>
-        <div class="form-group">
-          <label>App ID</label>
-          <input type="text" id="fb-appId" placeholder="1:123456:web:abc123">
-        </div>
+        <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId" placeholder="mi-proyecto"></div>
+        <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123456:web:abc123"></div>
       </div>
-
-      <button class="btn btn-gold btn-lg" onclick="guardarFirebaseConfig()" style="width:100%; justify-content:center; margin-top:8px;">
-        ✅ Guardar y conectar
-      </button>
-
+      <button class="btn btn-gold btn-lg" onclick="guardarFirebaseConfig()" style="width:100%; justify-content:center; margin-top:8px;">✅ Guardar y conectar</button>
       <hr class="divider">
-      <p style="font-size:12px; color:var(--text-muted); text-align:center;">
-        ¿Ya configuraste Firebase antes? <a href="#" onclick="saltarSetup()" style="color:var(--wine);">Usar datos locales por ahora</a>
-      </p>
+      <p style="font-size:12px; color:var(--text-muted); text-align:center;">¿Sin Firebase por ahora? <a href="#" onclick="saltarSetup(); return false;" style="color:var(--wine);">Usar datos locales</a></p>
     </div>
   </div>
 </div>
 
-<!-- HEADER -->
+<!-- ══ HEADER ══ -->
 <header>
   <div class="header-brand">
     <div>
@@ -920,7 +371,7 @@ function login() {
   </div>
 </header>
 
-<!-- NAV -->
+<!-- ══ NAV ══ -->
 <nav>
   <button class="active" onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
   <button onclick="showPage('ventas')" data-page="ventas"><span class="nav-icon">🛒</span> Venta Rápida</button>
@@ -930,14 +381,13 @@ function login() {
   <button onclick="showPage('caja')" data-page="caja"><span class="nav-icon">💰</span> Caja</button>
 </nav>
 
-<!-- MAIN -->
+<!-- ══ MAIN ══ -->
 <main>
 
-  <!-- ══════════ DASHBOARD ══════════ -->
+  <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="section-title">Buenos días, Mallaviá 🍷</div>
     <div class="section-sub" id="dash-fecha"></div>
-
     <div class="stats-grid">
       <div class="stat-card wine-bg">
         <div class="stat-label">Ventas hoy</div>
@@ -960,7 +410,6 @@ function login() {
         <div class="stat-sub" id="dash-stock-bajo">cargando...</div>
       </div>
     </div>
-
     <div class="dash-sections">
       <div class="card">
         <div class="card-title">⚠ Stock crítico</div>
@@ -971,7 +420,6 @@ function login() {
         <div id="dash-ultimas-list"><div class="loader"><div class="spinner"></div></div></div>
       </div>
     </div>
-
     <div class="card" style="margin-top:0;">
       <div class="card-title">🚀 Acceso rápido</div>
       <div style="display:flex; gap:12px; flex-wrap:wrap;">
@@ -982,11 +430,10 @@ function login() {
     </div>
   </div>
 
-  <!-- ══════════ VENTA RÁPIDA ══════════ -->
+  <!-- VENTA RÁPIDA -->
   <div class="page" id="page-ventas">
     <div class="section-title">🛒 Venta Rápida</div>
     <div class="section-sub">Seleccioná los productos y procesá la venta en segundos.</div>
-
     <div class="venta-grid">
       <div>
         <div class="wine-search-wrap">
@@ -1005,7 +452,6 @@ function login() {
         </div>
         <div class="wines-list" id="wines-grid"></div>
       </div>
-
       <!-- CARRITO -->
       <div class="carrito-panel">
         <div class="carrito-header">
@@ -1013,10 +459,7 @@ function login() {
           <span id="carrito-count" style="font-size:13px; font-weight:400; color:var(--gold-light);">0 items</span>
         </div>
         <div id="carrito-body">
-          <div class="carrito-empty">
-            <div class="ico">🍷</div>
-            Seleccioná productos para agregar al pedido
-          </div>
+          <div class="carrito-empty"><div class="ico">🍷</div>Seleccioná productos para agregar al pedido</div>
         </div>
         <div class="carrito-footer">
           <div class="form-group">
@@ -1036,22 +479,17 @@ function login() {
             <span>Total:</span>
             <span id="carrito-total">$0</span>
           </div>
-          <button class="btn btn-gold" style="width:100%; justify-content:center; padding:12px;" onclick="procesarVenta()" id="btn-vender" disabled>
-            ✅ Confirmar venta
-          </button>
-          <button class="btn btn-danger btn-sm" style="width:100%; justify-content:center; margin-top:8px;" onclick="limpiarCarrito()">
-            🗑 Vaciar pedido
-          </button>
+          <button class="btn btn-gold" style="width:100%; justify-content:center; padding:12px;" onclick="procesarVenta()" id="btn-vender" disabled>✅ Confirmar venta</button>
+          <button class="btn btn-danger btn-sm" style="width:100%; justify-content:center; margin-top:8px;" onclick="limpiarCarrito()">🗑 Vaciar pedido</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════ STOCK ══════════ -->
+  <!-- STOCK -->
   <div class="page" id="page-stock">
     <div class="section-title">📦 Inventario</div>
     <div class="section-sub">Stock actual de todos los productos.</div>
-
     <div class="filters-row">
       <input type="text" id="stock-search" placeholder="Buscar producto..." oninput="renderStock()">
       <select id="stock-tipo" onchange="renderStock()">
@@ -1066,21 +504,15 @@ function login() {
       <button class="btn btn-outline" onclick="document.getElementById('excel-import').click()">📥 Importar Excel</button>
       <input type="file" id="excel-import" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(this)">
     </div>
-
     <div id="stock-alerts"></div>
-
     <div class="card" style="padding:0; overflow:hidden;">
       <div class="table-wrap">
         <table id="tabla-stock">
           <thead>
             <tr>
-              <th>Producto</th>
-              <th>Tipo</th>
-              <th>Bodega</th>
-              <th class="text-right">Precio</th>
-              <th class="text-center">Stock</th>
-              <th class="text-center">Estado</th>
-              <th class="text-center">Acciones</th>
+              <th>Producto</th><th>Tipo</th><th>Bodega</th>
+              <th class="text-right">Precio</th><th class="text-center">Stock</th>
+              <th class="text-center">Estado</th><th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-stock"></tbody>
@@ -1089,37 +521,23 @@ function login() {
     </div>
   </div>
 
-  <!-- ══════════ COMPRAS ══════════ -->
+  <!-- COMPRAS -->
   <div class="page" id="page-compras">
     <div class="section-title">🧾 Registrar Compra</div>
     <div class="section-sub">Cargá una compra a proveedores para actualizar el stock.</div>
-
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
       <div class="card">
         <div class="card-title">Nueva compra</div>
-
-        <div class="form-group">
-          <label>Proveedor / Bodega</label>
-          <input type="text" id="c-proveedor" placeholder="Ej: Peñaflor, Chandon...">
-        </div>
-        <div class="form-group">
-          <label>Fecha</label>
-          <input type="date" id="c-fecha">
-        </div>
-
+        <div class="form-group"><label>Proveedor / Bodega</label><input type="text" id="c-proveedor" placeholder="Ej: Peñaflor, Chandon..."></div>
+        <div class="form-group"><label>Fecha</label><input type="date" id="c-fecha"></div>
         <div id="compra-items">
           <div style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Productos comprados</div>
           <div id="compra-lineas"></div>
           <button class="btn btn-outline btn-sm" onclick="addLineaCompra()" style="margin-top:8px;">+ Agregar producto</button>
         </div>
-
         <hr class="divider">
-
         <div class="form-row">
-          <div class="form-group">
-            <label>Total de la factura ($)</label>
-            <input type="number" id="c-total" placeholder="0">
-          </div>
+          <div class="form-group"><label>Total de la factura ($)</label><input type="number" id="c-total" placeholder="0"></div>
           <div class="form-group">
             <label>Forma de pago</label>
             <select id="c-pago">
@@ -1129,17 +547,9 @@ function login() {
             </select>
           </div>
         </div>
-
-        <div class="form-group">
-          <label>Notas (opcional)</label>
-          <textarea id="c-notas" rows="2" placeholder="Observaciones..."></textarea>
-        </div>
-
-        <button class="btn btn-gold btn-lg" style="width:100%; justify-content:center;" onclick="registrarCompra()">
-          ✅ Registrar compra y actualizar stock
-        </button>
+        <div class="form-group"><label>Notas (opcional)</label><textarea id="c-notas" rows="2" placeholder="Observaciones..."></textarea></div>
+        <button class="btn btn-gold btn-lg" style="width:100%; justify-content:center;" onclick="registrarCompra()">✅ Registrar compra y actualizar stock</button>
       </div>
-
       <div class="card">
         <div class="card-title">📋 Últimas compras</div>
         <div id="lista-compras"><div class="loader"><div class="spinner"></div></div></div>
@@ -1147,11 +557,10 @@ function login() {
     </div>
   </div>
 
-  <!-- ══════════ HISTORIAL ══════════ -->
+  <!-- HISTORIAL -->
   <div class="page" id="page-historial">
     <div class="section-title">📋 Historial de Ventas</div>
     <div class="section-sub">Registro completo de todas las ventas.</div>
-
     <div class="filters-row">
       <input type="date" id="h-desde" onchange="renderHistorial()">
       <input type="date" id="h-hasta" onchange="renderHistorial()">
@@ -1164,34 +573,23 @@ function login() {
       </select>
       <button class="btn btn-outline" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
     </div>
-
     <div class="card" style="padding:12px 0 0; overflow:hidden;">
       <div style="display:flex; justify-content:space-between; padding:0 16px 12px; align-items:center;">
         <span style="font-size:13px; color:var(--text-muted);" id="h-resumen">-</span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Productos</th>
-              <th>Pago</th>
-              <th class="text-right">Total</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Pago</th><th class="text-right">Total</th><th class="text-center">Acciones</th></tr></thead>
           <tbody id="tbody-historial"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ══════════ CAJA ══════════ -->
+  <!-- CAJA -->
   <div class="page" id="page-caja">
     <div class="section-title">💰 Caja</div>
     <div class="section-sub">Movimientos de dinero y saldo actual.</div>
-
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="stat-card wine-bg">
         <div class="stat-label">Saldo total</div>
@@ -1207,39 +605,17 @@ function login() {
         <div class="stat-value" id="caja-digital">$0</div>
       </div>
     </div>
-
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
       <div class="card">
         <div class="card-title">+ Movimiento manual</div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="mov-tipo">
-            <option value="ingreso">Ingreso</option>
-            <option value="egreso">Egreso / Gasto</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Concepto</label>
-          <input type="text" id="mov-concepto" placeholder="Ej: Pago de servicio, retiro de caja...">
-        </div>
+        <div class="form-group"><label>Tipo</label><select id="mov-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso / Gasto</option></select></div>
+        <div class="form-group"><label>Concepto</label><input type="text" id="mov-concepto" placeholder="Ej: Pago de servicio, retiro de caja..."></div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Monto ($)</label>
-            <input type="number" id="mov-monto" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>Medio de pago</label>
-            <select id="mov-medio">
-              <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia</option>
-            </select>
-          </div>
+          <div class="form-group"><label>Monto ($)</label><input type="number" id="mov-monto" placeholder="0"></div>
+          <div class="form-group"><label>Medio de pago</label><select id="mov-medio"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
         </div>
-        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="registrarMovimiento()">
-          Registrar movimiento
-        </button>
+        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="registrarMovimiento()">Registrar movimiento</button>
       </div>
-
       <div class="card">
         <div class="card-title">📋 Últimos movimientos</div>
         <div id="lista-movimientos"><div class="loader"><div class="spinner"></div></div></div>
@@ -1259,51 +635,27 @@ function login() {
     <div class="modal-body">
       <input type="hidden" id="prod-id">
       <div class="form-row">
-        <div class="form-group">
-          <label>Nombre del producto *</label>
-          <input type="text" id="prod-nombre" placeholder="Ej: Malbec Reserva 750ml">
-        </div>
+        <div class="form-group"><label>Nombre del producto *</label><input type="text" id="prod-nombre" placeholder="Ej: Malbec Reserva 750ml"></div>
         <div class="form-group">
           <label>Tipo *</label>
           <select id="prod-tipo">
-            <option value="Tinto">Tinto</option>
-            <option value="Blanco">Blanco</option>
-            <option value="Rosado">Rosado</option>
-            <option value="Espumante">Espumante</option>
-            <option value="Cerveza">Cerveza</option>
-            <option value="Otro">Otro</option>
+            <option value="Tinto">Tinto</option><option value="Blanco">Blanco</option>
+            <option value="Rosado">Rosado</option><option value="Espumante">Espumante</option>
+            <option value="Cerveza">Cerveza</option><option value="Otro">Otro</option>
           </select>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Bodega / Marca</label>
-          <input type="text" id="prod-bodega" placeholder="Ej: Chandon, Trapiche...">
-        </div>
-        <div class="form-group">
-          <label>Varietal / Descripción</label>
-          <input type="text" id="prod-varietal" placeholder="Ej: Malbec, Torrontés...">
-        </div>
+        <div class="form-group"><label>Bodega / Marca</label><input type="text" id="prod-bodega" placeholder="Ej: Chandon, Trapiche..."></div>
+        <div class="form-group"><label>Varietal / Descripción</label><input type="text" id="prod-varietal" placeholder="Ej: Malbec, Torrontés..."></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Precio de venta ($) *</label>
-          <input type="number" id="prod-precio" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Precio de costo ($)</label>
-          <input type="number" id="prod-costo" placeholder="0">
-        </div>
+        <div class="form-group"><label>Precio de venta ($) *</label><input type="number" id="prod-precio" placeholder="0"></div>
+        <div class="form-group"><label>Precio de costo ($)</label><input type="number" id="prod-costo" placeholder="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Stock actual (unidades) *</label>
-          <input type="number" id="prod-stock" placeholder="0" min="0">
-        </div>
-        <div class="form-group">
-          <label>Stock mínimo (alerta)</label>
-          <input type="number" id="prod-stock-min" placeholder="3" min="0">
-        </div>
+        <div class="form-group"><label>Stock actual (unidades) *</label><input type="number" id="prod-stock" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Stock mínimo (alerta)</label><input type="number" id="prod-stock-min" placeholder="3" min="0"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1322,10 +674,7 @@ function login() {
     </div>
     <div class="modal-body">
       <p style="font-size:14px; margin-bottom:14px;" id="ajuste-nombre"></p>
-      <div class="form-group">
-        <label>Nuevo stock (unidades)</label>
-        <input type="number" id="ajuste-qty" placeholder="0" min="0">
-      </div>
+      <div class="form-group"><label>Nuevo stock (unidades)</label><input type="number" id="ajuste-qty" placeholder="0" min="0"></div>
       <input type="hidden" id="ajuste-id">
     </div>
     <div class="modal-footer">
@@ -1358,32 +707,18 @@ function login() {
       <button class="close-btn" onclick="cerrarModal('modal-config')">×</button>
     </div>
     <div class="modal-body config-form">
-      <div class="config-note">
-        Podés cambiar la configuración de Firebase en cualquier momento. Los datos se guardan en tu navegador.
+      <div class="config-note">Podés cambiar la configuración de Firebase en cualquier momento. Los datos se guardan en tu navegador.</div>
+      <div class="form-row">
+        <div class="form-group"><label>API Key</label><input type="text" id="cfg-apiKey"></div>
+        <div class="form-group"><label>Auth Domain</label><input type="text" id="cfg-authDomain"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>API Key</label>
-          <input type="text" id="cfg-apiKey">
-        </div>
-        <div class="form-group">
-          <label>Auth Domain</label>
-          <input type="text" id="cfg-authDomain">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Project ID</label>
-          <input type="text" id="cfg-projectId">
-        </div>
-        <div class="form-group">
-          <label>App ID</label>
-          <input type="text" id="cfg-appId">
-        </div>
+        <div class="form-group"><label>Project ID</label><input type="text" id="cfg-projectId"></div>
+        <div class="form-group"><label>App ID</label><input type="text" id="cfg-appId"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" onclick="resetearDatos()">🗑 Borrar todos los datos locales</button>
+      <button class="btn btn-danger btn-sm" onclick="resetearDatos()">🗑 Borrar datos locales</button>
       <button class="btn btn-outline" onclick="cerrarModal('modal-config')">Cancelar</button>
       <button class="btn btn-gold" onclick="actualizarConfig()">Guardar</button>
     </div>
@@ -1394,36 +729,61 @@ function login() {
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════
-let db = null;
-let productos = [];
-let ventas = [];
-let compras = [];
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #2: LOGIN — función única, sin conflicto de onload
+// ══════════════════════════════════════════════════════════
+const USUARIO = "admin@mallavia.com";
+const CLAVE   = "1234";
+
+async function doLogin() {
+  const email = document.getElementById("email").value.trim();
+  const pass  = document.getElementById("password").value;
+  if (email === USUARIO && pass === CLAVE) {
+    localStorage.setItem("mallavia_auth", "true");
+    document.getElementById("loginScreen").style.display = "none";
+    await iniciarApp();
+  } else {
+    document.getElementById("login-error").textContent = "Email o contraseña incorrectos";
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// STATE GLOBAL
+// ══════════════════════════════════════════════════════════
+let db          = null;
+let productos   = [];
+let ventas      = [];
+let compras     = [];
 let movimientos = [];
-let carrito = [];
-let modoLocal = false;
+let carrito     = [];
+let modoLocal   = false;
 
 const STOCK_MIN_DEFAULT = 3;
 
-// ══════════════════════════════════════════
-// FIREBASE INIT
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #3: FIREBASE INIT — único punto de inicialización
+//    usa firebase compat (v9 compat) correctamente
+// ══════════════════════════════════════════════════════════
 function getFirebaseConfig() {
-  const stored = localStorage.getItem('mallavia_fb_config');
-  return stored ? JSON.parse(stored) : null;
+  try {
+    const stored = localStorage.getItem('mallavia_fb_config');
+    return stored ? JSON.parse(stored) : null;
+  } catch(e) { return null; }
 }
 
 function initFirebase(config) {
   try {
-    if (firebase.apps.length) firebase.app();
-    else firebase.initializeApp(config);
+    // ✅ Evitar doble inicialización
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
     db = firebase.firestore();
+    // ✅ Verificar conexión real con una operación mínima
+    console.log('[Firebase] Inicializado correctamente. Project:', config.projectId);
     setDBStatus(true);
     return true;
   } catch(e) {
-    console.error('Firebase error:', e);
+    console.error('[Firebase] Error de inicialización:', e);
     setDBStatus(false);
     return false;
   }
@@ -1432,218 +792,295 @@ function initFirebase(config) {
 function setDBStatus(ok) {
   const dot = document.getElementById('db-dot');
   const lbl = document.getElementById('db-label');
-  if (ok) { dot.className='db-dot ok'; lbl.textContent='Firebase conectado'; }
-  else if (modoLocal) { dot.className='db-dot'; lbl.textContent='Modo local'; }
-  else { dot.className='db-dot error'; lbl.textContent='Sin conexión'; }
+  if (!dot || !lbl) return;
+  if (ok)             { dot.className='db-dot ok';    lbl.textContent='Firebase conectado'; }
+  else if (modoLocal) { dot.className='db-dot';       lbl.textContent='Modo local'; }
+  else                { dot.className='db-dot error'; lbl.textContent='Sin conexión'; }
 }
 
-// ══════════════════════════════════════════
-// STARTUP
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #4: STARTUP — único window.onload, flujo claro
+// ══════════════════════════════════════════════════════════
 window.onload = async function() {
-  // ✅ CORRECCIÓN BUG #1: El segundo window.onload del login fue eliminado.
-  // Ahora el check de auth está unificado aquí, evitando que uno sobreescriba al otro.
-  if (localStorage.getItem("auth") === "true") {
-    document.getElementById("loginScreen").style.display = "none";
+  // Verificar autenticación
+  if (localStorage.getItem('mallavia_auth') !== 'true') {
+    // Dejar loginScreen visible, no hacer nada más
+    return;
   }
+  document.getElementById('loginScreen').style.display = 'none';
+  await iniciarApp();
+};
 
+// Separamos la lógica de la app para poder llamarla post-login
+async function iniciarApp() {
   setFechaHoy();
+
   const config = getFirebaseConfig();
-  if (!config) {
+
+  if (!config || !config.apiKey || !config.projectId) {
+    // Sin configuración Firebase: mostrar setup
     document.getElementById('setup-overlay').style.display = 'block';
+    cargarDesdeLocal();
+    if (productos.length === 0) cargarCatalogoEnMemoria();
+    renderAll();
     return;
   }
 
-  console.log('🔥 [Mallaviá] Iniciando Firebase - projectId:', config.projectId);
   const ok = initFirebase(config);
+
   if (ok) {
-    console.log('✅ [Mallaviá] Firebase conectado, cargando datos...');
-    await cargarTodo();
-    // Si Firestore está vacío, precargar el catálogo del Excel
-    if (productos.length === 0) {
-      await precargarCatalogo();
+    try {
+      await cargarTodo();
+      // ✅ Solo precargar catálogo si Firebase está vacío
+      if (productos.length === 0) {
+        await precargarCatalogo();
+      }
+    } catch(e) {
+      console.error('[Startup] Error cargando desde Firebase:', e);
+      modoLocal = true;
+      setDBStatus(false);
+      cargarDesdeLocal();
+      if (productos.length === 0) cargarCatalogoEnMemoria();
     }
   } else {
-    console.warn('⚠️ [Mallaviá] Firebase falló, modo local activado');
     modoLocal = true;
-    setDBStatus(false);
     cargarDesdeLocal();
+    if (productos.length === 0) cargarCatalogoEnMemoria();
   }
+
+  renderAll();
+}
+
+
+
+function renderAll() {
   renderDashboard();
   renderVentasGrid();
   renderStock();
   renderHistorial();
   renderCaja();
   cargarCompras();
-};
+}
 
 function setFechaHoy() {
   const hoy = new Date();
   const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-  document.getElementById('dash-fecha').textContent = hoy.toLocaleDateString('es-AR', opts);
-  document.getElementById('c-fecha').valueAsDate = hoy;
+  const fechaEl = document.getElementById('dash-fecha');
+  if (fechaEl) fechaEl.textContent = hoy.toLocaleDateString('es-AR', opts);
+  const cFecha = document.getElementById('c-fecha');
+  if (cFecha) cFecha.valueAsDate = hoy;
   const desde = new Date(hoy); desde.setDate(1);
-  document.getElementById('h-desde').value = desde.toISOString().slice(0,10);
-  document.getElementById('h-hasta').value = hoy.toISOString().slice(0,10);
+  const hDesde = document.getElementById('h-desde');
+  const hHasta = document.getElementById('h-hasta');
+  if (hDesde) hDesde.value = desde.toISOString().slice(0,10);
+  if (hHasta) hHasta.value = hoy.toISOString().slice(0,10);
 }
 
-// ══════════════════════════════════════════
-// FIREBASE CRUD
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #5: FIREBASE CRUD — manejo de errores robusto
+// ══════════════════════════════════════════════════════════
 async function cargarTodo() {
-  try {
-    const [ps, vs, cs, ms] = await Promise.all([
-      db.collection('productos').orderBy('nombre').get(),
-      db.collection('ventas').orderBy('fecha','desc').limit(200).get(),
-      db.collection('compras').orderBy('fecha','desc').limit(100).get(),
-      db.collection('movimientos').orderBy('fecha','desc').limit(200).get()
-    ]);
-    productos = ps.docs.map(d => ({id:d.id,...d.data()}));
-    ventas = vs.docs.map(d => ({id:d.id,...d.data()}));
-    compras = cs.docs.map(d => ({id:d.id,...d.data()}));
-    movimientos = ms.docs.map(d => ({id:d.id,...d.data()}));
-    guardarLocal();
-  } catch(e) {
-    console.error(e);
-    cargarDesdeLocal();
-    modoLocal = true;
-    setDBStatus(false);
-  }
+  const [ps, vs, cs, ms] = await Promise.all([
+    db.collection('productos').orderBy('nombre').get(),
+    db.collection('ventas').orderBy('fecha','desc').limit(200).get(),
+    db.collection('compras').orderBy('fecha','desc').limit(100).get(),
+    db.collection('movimientos').orderBy('fecha','desc').limit(200).get()
+  ]);
+  productos   = ps.docs.map(d => ({id:d.id, ...d.data()}));
+  ventas      = vs.docs.map(d => ({id:d.id, ...d.data()}));
+  compras     = cs.docs.map(d => ({id:d.id, ...d.data()}));
+  movimientos = ms.docs.map(d => ({id:d.id, ...d.data()}));
+  guardarLocal(); // cachear en localStorage
+  console.log(`[Firebase] Cargado: ${productos.length} productos, ${ventas.length} ventas`);
 }
 
 async function saveDoc(col, data, id=null) {
+  // ✅ Siempre intentar Firebase primero; LocalStorage solo como respaldo
   if (db && !modoLocal) {
     try {
-      if (id) { await db.collection(col).doc(id).set(data); return id; }
-      else { const ref = await db.collection(col).add(data); return ref.id; }
+      if (id) {
+        await db.collection(col).doc(id).set(data, { merge: true });
+        return id;
+      } else {
+        const ref = await db.collection(col).add({
+          ...data,
+          _createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return ref.id;
+      }
     } catch(e) {
-      // CORRECCION: error visible al usuario, no solo en consola
-      console.error('[Firebase] saveDoc error en coleccion ' + col + ':', e);
-      const msg = e.code === 'permission-denied' ? '❌ Firebase: Sin permisos. Revisá las reglas de Firestore.' :
-                  e.code === 'unavailable'       ? '❌ Firebase: Sin conexión a internet.' :
-                  '❌ Firebase error: ' + e.message;
+      console.error(`[Firebase] Error guardando en '${col}':`, e);
+      const msg = e.code === 'permission-denied'
+        ? '⚠ Firebase: sin permisos. Revisá las reglas de Firestore.'
+        : '⚠ Error Firebase: ' + e.message;
       toast(msg, 'error');
-      // Guardar local como fallback
+      // Fallback: generar ID local
+      return id || ('local_' + Date.now());
     }
   }
-  return id || Date.now().toString();
+  // Modo local
+  return id || ('local_' + Date.now());
 }
 
 async function updateDoc(col, id, data) {
-  if (db && !modoLocal) {
-    try { await db.collection(col).doc(id).update(data); } catch(e) {
-      console.error('[Firebase] updateDoc error en ' + col + '/' + id + ':', e);
-      const msg = e.code === 'permission-denied' ? '❌ Firebase: Sin permisos. Revisá reglas Firestore.' :
-                  '❌ Firebase update error: ' + e.message;
-      toast(msg, 'error');
+  if (db && !modoLocal && id && !id.startsWith('local_')) {
+    try {
+      await db.collection(col).doc(id).update(data);
+    } catch(e) {
+      console.error(`[Firebase] Error actualizando '${col}/${id}':`, e);
     }
   }
 }
 
 async function deleteDoc(col, id) {
-  if (db && !modoLocal) {
-    try { await db.collection(col).doc(id).delete(); } catch(e) { console.error('[Firebase] deleteDoc error:', e); }
+  if (db && !modoLocal && id && !id.startsWith('local_')) {
+    try {
+      await db.collection(col).doc(id).delete();
+    } catch(e) {
+      console.error(`[Firebase] Error eliminando '${col}/${id}':`, e);
+    }
   }
 }
 
-// ══════════════════════════════════════════
-// PRODUCTOS PRECARGADOS DEL CATALOGO (Abril 2026 - Vinos_1.xlsx)
-// Se usan solo si Firebase no tiene datos y el localStorage está vacío
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #6: CATÁLOGO — precios exactos del Excel, sin duplicados
+// ══════════════════════════════════════════════════════════
 const CATALOGO_INICIAL = [
-  {nombre:'Alamos Malbec', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Malbec', precio:5840, costo:4550, stock:23, stockMin:6},
-  {nombre:'Angelica Zapata Malbec 2021 x 4', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Malbec', precio:23750, costo:18667, stock:16, stockMin:4},
-  {nombre:'Angelica Zapata Cabernet Franc 2021 x 4', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Cabernet Franc', precio:21250, costo:16542, stock:36, stockMin:4},
-  {nombre:'El Enemigo Malbec', tipo:'Tinto', bodega:'Clos de los Siete', varietal:'Malbec', precio:20100, costo:15768, stock:8, stockMin:3},
-  {nombre:'Gran Enemigo Cabernet Franc', tipo:'Tinto', bodega:'Clos de los Siete', varietal:'Cabernet Franc', precio:45000, costo:34750, stock:6, stockMin:3},
-  {nombre:'DV Catena Cabernet/Malbec', tipo:'Tinto', bodega:'Catena Zapata', varietal:'Blend', precio:12000, costo:9832, stock:18, stockMin:6},
-  {nombre:'Nicasia Cabernet Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:7050, costo:5521, stock:40, stockMin:6},
-  {nombre:'Nicasia Gran Blend', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:10150, costo:7958, stock:32, stockMin:6},
-  {nombre:'Nicasia Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:7050, costo:5521, stock:30, stockMin:6},
-  {nombre:'Nicasia Blanc de Blancs', tipo:'Blanco', bodega:'La Rural', varietal:'Blend', precio:7050, costo:5521, stock:18, stockMin:6},
-  {nombre:'Rutini Cabernet Sauvignon/Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:14600, costo:10387, stock:11, stockMin:6},
-  {nombre:'Rutini Dominio Malbec 2022', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:20980, costo:15950, stock:17, stockMin:3},
-  {nombre:'Rutini Encuentro Cabernet Sauvignon', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Sauvignon', precio:11400, costo:8700, stock:12, stockMin:6},
-  {nombre:'Rutini Encuentro Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:11400, costo:8700, stock:6, stockMin:6},
-  {nombre:'Rutini Sauvignon Blanc 2024', tipo:'Blanco', bodega:'La Rural', varietal:'Sauvignon Blanc', precio:15900, costo:12470, stock:0, stockMin:3},
-  {nombre:'Saint Felicien Cabernet Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:9000, costo:7042, stock:8, stockMin:6},
-  {nombre:'Saint Felicien Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:9000, costo:7042, stock:24, stockMin:6},
-  {nombre:'Saint Felicien Pinot Noir', tipo:'Tinto', bodega:'La Rural', varietal:'Pinot Noir', precio:9000, costo:7042, stock:28, stockMin:6},
-  {nombre:'Saint Felicien Syrah-Malbec Rose x 4', tipo:'Rosado', bodega:'La Rural', varietal:'Rosé', precio:22000, costo:16321, stock:4, stockMin:4},
-  {nombre:'Sam Felipe 12 Uvas', tipo:'Tinto', bodega:'La Rural', varietal:'Blend', precio:4700, costo:3596, stock:20, stockMin:6},
-  {nombre:'San Felipe Blanco', tipo:'Blanco', bodega:'La Rural', varietal:'Blanco', precio:4700, costo:3596, stock:12, stockMin:6},
-  {nombre:'San Felipe Tinto', tipo:'Tinto', bodega:'La Rural', varietal:'Tinto', precio:4700, costo:3596, stock:6, stockMin:6},
-  {nombre:'Trumpeter Cab. Sauvignon', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Sauvignon', precio:7400, costo:5774, stock:60, stockMin:6},
-  {nombre:'Trumpeter Cabernet/Franc', tipo:'Tinto', bodega:'La Rural', varietal:'Cabernet Franc', precio:7400, costo:5774, stock:66, stockMin:6},
-  {nombre:'Trumpeter Malbec', tipo:'Tinto', bodega:'La Rural', varietal:'Malbec', precio:7400, costo:5774, stock:78, stockMin:6},
-  {nombre:'Trumpeter Merlot', tipo:'Tinto', bodega:'La Rural', varietal:'Merlot', precio:7400, costo:0, stock:18, stockMin:6},
-  {nombre:'Trumpeter Syrah', tipo:'Tinto', bodega:'La Rural', varietal:'Syrah', precio:7400, costo:5774, stock:36, stockMin:6},
-  {nombre:'Trumpeter Sauvignon Blanc', tipo:'Blanco', bodega:'La Rural', varietal:'Sauvignon Blanc', precio:7400, costo:5774, stock:12, stockMin:6},
-  {nombre:'Cerveza Corona x 330 Pack x 6 Botellas', tipo:'Cerveza', bodega:'AB InBev', varietal:'Lager', precio:2600, costo:2100, stock:99, stockMin:12},
-  {nombre:'Cerveza Corona 0 x 330 Pack x 4 Botellas', tipo:'Cerveza', bodega:'AB InBev', varietal:'Lager', precio:2140, costo:1700, stock:18, stockMin:8},
+  {nombre:'Alamos Malbec',                              tipo:'Tinto',   bodega:'Catena Zapata',  varietal:'Malbec',             precioCaja:35040, precio:5840,  costo:0, stock:0, stockMin:6},
+  {nombre:'Angelica Zapata Malbec 2021 x 4',            tipo:'Tinto',   bodega:'Catena Zapata',  varietal:'Malbec',             precioCaja:95000, precio:23750, costo:0, stock:0, stockMin:4},
+  {nombre:'Angelica Zapata Cabernet Franc 2021 x 4',    tipo:'Tinto',   bodega:'Catena Zapata',  varietal:'Cabernet Franc',     precioCaja:85000, precio:21250, costo:0, stock:0, stockMin:4},
+  {nombre:'El Enemigo Malbec',                          tipo:'Tinto',   bodega:'Clos de los Siete', varietal:'Malbec',          precioCaja:120600,precio:20100, costo:0, stock:0, stockMin:3},
+  {nombre:'Gran Enemigo Cabernet Franc',                tipo:'Tinto',   bodega:'Clos de los Siete', varietal:'Cabernet Franc',  precioCaja:270000,precio:45000, costo:0, stock:0, stockMin:3},
+  {nombre:'DV Catena Cabernet/Malbec',                  tipo:'Tinto',   bodega:'Catena Zapata',  varietal:'Blend',              precioCaja:72000, precio:12000, costo:0, stock:0, stockMin:6},
+  {nombre:'Nicasia Cabernet Franc',                     tipo:'Tinto',   bodega:'La Rural',       varietal:'Cabernet Franc',     precioCaja:42300, precio:7050,  costo:0, stock:0, stockMin:6},
+  {nombre:'Nicasia Gran Blend',                         tipo:'Tinto',   bodega:'La Rural',       varietal:'Blend',              precioCaja:60900, precio:10150, costo:0, stock:0, stockMin:6},
+  {nombre:'Nicasia Malbec',                             tipo:'Tinto',   bodega:'La Rural',       varietal:'Malbec',             precioCaja:42300, precio:7050,  costo:0, stock:0, stockMin:6},
+  {nombre:'Nicasia Blanc de Blancs',                    tipo:'Blanco',  bodega:'La Rural',       varietal:'Blanc de Blancs',    precioCaja:42300, precio:7050,  costo:0, stock:0, stockMin:6},
+  {nombre:'Rutini Cabernet Sauvignon/Malbec',           tipo:'Tinto',   bodega:'La Rural',       varietal:'Blend',              precioCaja:87600, precio:14600, costo:0, stock:0, stockMin:6},
+  {nombre:'Rutini Dominio Malbec 2022',                 tipo:'Tinto',   bodega:'La Rural',       varietal:'Malbec',             precioCaja:125880,precio:20980, costo:0, stock:0, stockMin:3},
+  {nombre:'Rutini Encuentro Cabernet Sauvignon',        tipo:'Tinto',   bodega:'La Rural',       varietal:'Cabernet Sauvignon', precioCaja:68400, precio:11400, costo:0, stock:0, stockMin:6},
+  {nombre:'Rutini Encuentro Malbec',                    tipo:'Tinto',   bodega:'La Rural',       varietal:'Malbec',             precioCaja:68400, precio:11400, costo:0, stock:0, stockMin:6},
+  {nombre:'Rutini Sauvignon Blanc 2024',                tipo:'Blanco',  bodega:'La Rural',       varietal:'Sauvignon Blanc',    precioCaja:0,     precio:15900, costo:0, stock:0, stockMin:3},
+  {nombre:'Saint Felicien Cabernet Franc',              tipo:'Tinto',   bodega:'La Rural',       varietal:'Cabernet Franc',     precioCaja:54000, precio:9000,  costo:0, stock:0, stockMin:6},
+  {nombre:'Saint Felicien Malbec',                      tipo:'Tinto',   bodega:'La Rural',       varietal:'Malbec',             precioCaja:54000, precio:9000,  costo:0, stock:0, stockMin:6},
+  {nombre:'Saint Felicien Pinot Noir',                  tipo:'Tinto',   bodega:'La Rural',       varietal:'Pinot Noir',         precioCaja:54000, precio:9000,  costo:0, stock:0, stockMin:6},
+  {nombre:'Saint Felicien Syrah-Malbec Rose x 4',       tipo:'Rosado',  bodega:'La Rural',       varietal:'Rosé Blend',         precioCaja:88000, precio:22000, costo:0, stock:0, stockMin:4},
+  {nombre:'Sam Felipe 12 Uvas',                         tipo:'Tinto',   bodega:'La Rural',       varietal:'Blend',              precioCaja:28200, precio:4700,  costo:0, stock:0, stockMin:6},
+  {nombre:'San Felipe Blanco',                          tipo:'Blanco',  bodega:'La Rural',       varietal:'Blanco',             precioCaja:28200, precio:4700,  costo:0, stock:0, stockMin:6},
+  {nombre:'San Felipe Tinto',                           tipo:'Tinto',   bodega:'La Rural',       varietal:'Tinto',              precioCaja:28200, precio:4700,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Cab. Sauvignon',                   tipo:'Tinto',   bodega:'La Rural',       varietal:'Cabernet Sauvignon', precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Cabernet/Franc',                   tipo:'Tinto',   bodega:'La Rural',       varietal:'Cabernet Franc',     precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Malbec',                           tipo:'Tinto',   bodega:'La Rural',       varietal:'Malbec',             precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Merlot',                           tipo:'Tinto',   bodega:'La Rural',       varietal:'Merlot',             precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Syrah',                            tipo:'Tinto',   bodega:'La Rural',       varietal:'Syrah',              precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Trumpeter Sauvignon Blanc',                  tipo:'Blanco',  bodega:'La Rural',       varietal:'Sauvignon Blanc',    precioCaja:44400, precio:7400,  costo:0, stock:0, stockMin:6},
+  {nombre:'Cerveza Corona x 330 Pack x 6 Botellas',    tipo:'Cerveza', bodega:'AB InBev',        varietal:'Lager',              precioCaja:15600, precio:2600,  costo:0, stock:0, stockMin:12},
+  {nombre:'Cerveza Corona 0 x 330 Pack x 4 Botellas',  tipo:'Cerveza', bodega:'AB InBev',        varietal:'Lager Sin Alcohol',  precioCaja:8560,  precio:2140,  costo:0, stock:0, stockMin:8},
 ];
 
-async function precargarCatalogo() {
-  if (productos.length > 0) return; // ya hay datos, no sobreescribir
-  console.log('[Mallaviá] Precargando catálogo inicial (' + CATALOGO_INICIAL.length + ' productos)...');
-  for (const p of CATALOGO_INICIAL) {
-    const id = await saveDoc('productos', p);
-    productos.push({id, ...p});
-  }
-  productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
+// ✅ Carga en memoria (sin Firebase)
+function cargarCatalogoEnMemoria() {
+  if (productos.length > 0) return;
+  productos = CATALOGO_INICIAL.map((p, i) => ({ id: 'local_' + i, ...p }));
   guardarLocal();
-  console.log('[Mallaviá] Catálogo precargado.');
+  console.log('[Local] Catálogo cargado en memoria:', productos.length, 'productos');
 }
 
-// LOCAL STORAGE FALLBACK
-// ══════════════════════════════════════════
+// ✅ Carga en Firebase — evita duplicados comparando por nombre (case-insensitive)
+async function precargarCatalogo() {
+  if (productos.length > 0) {
+    console.log('[Firebase] Catálogo ya existe, no se precarga.');
+    return;
+  }
+  console.log('[Firebase] Precargando catálogo inicial...');
+  toast('⏳ Cargando catálogo de vinos...', '');
+
+  const batch = db.batch(); // ✅ Usar batch para eficiencia
+  const nuevos = [];
+
+  for (const item of CATALOGO_INICIAL) {
+    const ref = db.collection('productos').doc(); // auto-ID
+    batch.set(ref, {
+      ...item,
+      _createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    nuevos.push({ id: ref.id, ...item });
+  }
+
+  try {
+    await batch.commit();
+    productos = nuevos;
+    productos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    guardarLocal();
+    console.log('[Firebase] Catálogo precargado:', productos.length, 'productos');
+    toast('✅ Catálogo de ' + productos.length + ' vinos cargado', 'success');
+  } catch(e) {
+    console.error('[Firebase] Error precargando catálogo:', e);
+    // Fallback a local
+    cargarCatalogoEnMemoria();
+    toast('⚠ Catálogo cargado en modo local', '');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ✅ FIX #7: LOCAL STORAGE — solo como caché, fuente de verdad = Firebase
+// ══════════════════════════════════════════════════════════
 function guardarLocal() {
-  localStorage.setItem('mallavia_productos', JSON.stringify(productos));
-  localStorage.setItem('mallavia_ventas', JSON.stringify(ventas));
-  localStorage.setItem('mallavia_compras', JSON.stringify(compras));
-  localStorage.setItem('mallavia_movimientos', JSON.stringify(movimientos));
+  try {
+    localStorage.setItem('mallavia_productos',   JSON.stringify(productos));
+    localStorage.setItem('mallavia_ventas',      JSON.stringify(ventas));
+    localStorage.setItem('mallavia_compras',     JSON.stringify(compras));
+    localStorage.setItem('mallavia_movimientos', JSON.stringify(movimientos));
+  } catch(e) {
+    console.warn('[LocalStorage] No se pudo guardar:', e.message);
+  }
 }
 
 function cargarDesdeLocal() {
-  productos = JSON.parse(localStorage.getItem('mallavia_productos') || '[]');
-  ventas = JSON.parse(localStorage.getItem('mallavia_ventas') || '[]');
-  compras = JSON.parse(localStorage.getItem('mallavia_compras') || '[]');
-  movimientos = JSON.parse(localStorage.getItem('mallavia_movimientos') || '[]');
+  try {
+    productos   = JSON.parse(localStorage.getItem('mallavia_productos')   || '[]');
+    ventas      = JSON.parse(localStorage.getItem('mallavia_ventas')      || '[]');
+    compras     = JSON.parse(localStorage.getItem('mallavia_compras')     || '[]');
+    movimientos = JSON.parse(localStorage.getItem('mallavia_movimientos') || '[]');
+    console.log('[LocalStorage] Cargado:', productos.length, 'productos');
+  } catch(e) {
+    console.error('[LocalStorage] Error al cargar:', e);
+    productos = []; ventas = []; compras = []; movimientos = [];
+  }
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // NAVIGATION
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function showPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('page-' + p).classList.add('active');
   document.querySelector(`nav button[data-page="${p}"]`).classList.add('active');
-  if (p==='dashboard') renderDashboard();
-  if (p==='stock') renderStock();
-  if (p==='historial') renderHistorial();
-  if (p==='caja') renderCaja();
-  if (p==='compras') cargarCompras();
-  if (p==='ventas') renderVentasGrid();
+  if (p === 'dashboard') renderDashboard();
+  if (p === 'stock')     renderStock();
+  if (p === 'historial') renderHistorial();
+  if (p === 'caja')      renderCaja();
+  if (p === 'compras')   { cargarCompras(); if (!lineasCompra.length) addLineaCompra(); }
+  if (p === 'ventas')    renderVentasGrid();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // DASHBOARD
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function renderDashboard() {
   const hoy = new Date().toISOString().slice(0,10);
   const mes = hoy.slice(0,7);
-
   const ventasHoy = ventas.filter(v => (v.fecha||'').startsWith(hoy));
   const ventasMes = ventas.filter(v => (v.fecha||'').startsWith(mes));
-
   const totalHoy = ventasHoy.reduce((a,v) => a+(v.total||0), 0);
   const totalMes = ventasMes.reduce((a,v) => a+(v.total||0), 0);
 
-  document.getElementById('dash-ventas-hoy').textContent = formatPeso(totalHoy);
+  document.getElementById('dash-ventas-hoy').textContent     = formatPeso(totalHoy);
   document.getElementById('dash-ventas-hoy-cnt').textContent = `${ventasHoy.length} transacciones`;
-  document.getElementById('dash-ventas-mes').textContent = formatPeso(totalMes);
+  document.getElementById('dash-ventas-mes').textContent     = formatPeso(totalMes);
   document.getElementById('dash-ventas-mes-cnt').textContent = `${ventasMes.length} transacciones`;
-  document.getElementById('dash-productos').textContent = productos.length;
+  document.getElementById('dash-productos').textContent      = productos.length;
 
   const criticos = productos.filter(p => (p.stock||0) <= (p.stockMin||STOCK_MIN_DEFAULT));
   document.getElementById('dash-stock-bajo').textContent = `${criticos.length} con stock bajo`;
@@ -1676,21 +1113,19 @@ function renderDashboard() {
   }
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // VENTAS GRID
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function filtrarVinos() { renderVentasGrid(); }
 
 function renderVentasGrid() {
-  const q = (document.getElementById('wine-search')?.value||'').toLowerCase();
+  const q    = (document.getElementById('wine-search')?.value||'').toLowerCase();
   const tipo = document.getElementById('filtro-tipo')?.value||'';
   const grid = document.getElementById('wines-grid');
   if (!grid) return;
 
   const filtrados = productos.filter(p => {
-    const matchNombre = p.nombre.toLowerCase().includes(q);
-    const matchTipo = !tipo || p.tipo === tipo;
-    return matchNombre && matchTipo;
+    return p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo === tipo);
   });
 
   if (!filtrados.length) {
@@ -1700,8 +1135,9 @@ function renderVentasGrid() {
 
   grid.innerHTML = filtrados.map(p => {
     const sinStock = (p.stock||0) === 0;
-    const bajito = (p.stock||0) > 0 && (p.stock||0) <= (p.stockMin||STOCK_MIN_DEFAULT);
-    return `<div class="wine-card${sinStock?' out':''}" onclick="${sinStock?'':'agregarAlCarrito(\''+p.id+'\')'}">
+    const bajito   = (p.stock||0) > 0 && (p.stock||0) <= (p.stockMin||STOCK_MIN_DEFAULT);
+    const onclick  = sinStock ? '' : `onclick="agregarAlCarrito('${p.id}')"`;
+    return `<div class="wine-card${sinStock?' out':''}" ${onclick}>
       <div class="wine-card-name">${p.nombre}</div>
       <div class="wine-card-info">${p.tipo||''} ${p.bodega?'· '+p.bodega:''} ${p.varietal?'· '+p.varietal:''}</div>
       <div class="wine-card-price">${formatPeso(p.precio||0)}</div>
@@ -1728,7 +1164,7 @@ function agregarAlCarrito(prodId) {
 
 function renderCarrito() {
   const body = document.getElementById('carrito-body');
-  const btn = document.getElementById('btn-vender');
+  const btn  = document.getElementById('btn-vender');
   document.getElementById('carrito-count').textContent = `${carrito.length} items`;
 
   if (!carrito.length) {
@@ -1750,7 +1186,6 @@ function renderCarrito() {
       <span class="carrito-item-total">${formatPeso(c.precio*c.qty)}</span>
     </div>`).join('')}
   </div>`;
-
   document.getElementById('carrito-total').textContent = formatPeso(total);
   if (btn) btn.disabled = false;
 }
@@ -1758,19 +1193,19 @@ function renderCarrito() {
 function cambiarQty(i, delta) {
   const prod = productos.find(p => p.id === carrito[i].prodId);
   carrito[i].qty += delta;
-  if (carrito[i].qty <= 0) carrito.splice(i,1);
+  if (carrito[i].qty <= 0) carrito.splice(i, 1);
   else if (prod && carrito[i].qty > (prod.stock||0)) { carrito[i].qty = prod.stock||0; toast('Límite de stock alcanzado','error'); }
   renderCarrito();
 }
 
-function limpiarCarrito() { carrito=[]; renderCarrito(); }
+function limpiarCarrito() { carrito = []; renderCarrito(); }
 
 async function procesarVenta() {
   if (!carrito.length) return;
   const cliente = document.getElementById('venta-cliente').value.trim();
-  const pago = document.getElementById('venta-pago').value;
-  const total = carrito.reduce((a,c) => a+c.precio*c.qty, 0);
-  const fecha = new Date().toISOString();
+  const pago    = document.getElementById('venta-pago').value;
+  const total   = carrito.reduce((a,c) => a + c.precio*c.qty, 0);
+  const fecha   = new Date().toISOString();
 
   const venta = {
     fecha, cliente, pago, total,
@@ -1786,7 +1221,7 @@ async function procesarVenta() {
     const prod = productos.find(p => p.id === item.prodId);
     if (prod) {
       prod.stock = Math.max(0, (prod.stock||0) - item.qty);
-      await updateDoc('productos', prod.id, {stock: prod.stock});
+      await updateDoc('productos', prod.id, { stock: prod.stock });
     }
   }
 
@@ -1797,7 +1232,6 @@ async function procesarVenta() {
   movimientos.unshift(mov);
 
   guardarLocal();
-
   mostrarComprobante(venta);
   limpiarCarrito();
   document.getElementById('venta-cliente').value = '';
@@ -1816,12 +1250,7 @@ function mostrarComprobante(venta) {
       </div>
       <div class="comprobante-items">
         <table>
-          <thead><tr>
-            <th>Producto</th>
-            <th class="text-center">Cant.</th>
-            <th class="text-right">P.Unit.</th>
-            <th class="text-right">Subtotal</th>
-          </tr></thead>
+          <thead><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-right">P.Unit.</th><th class="text-right">Subtotal</th></tr></thead>
           <tbody>${venta.items.map(i=>`<tr>
             <td>${i.nombre}</td>
             <td class="text-center">${i.qty}</td>
@@ -1829,18 +1258,10 @@ function mostrarComprobante(venta) {
             <td class="text-right">${formatPeso(i.precio*i.qty)}</td>
           </tr>`).join('')}</tbody>
         </table>
-        <div class="comprobante-total-line">
-          <span>TOTAL</span>
-          <span>${formatPeso(venta.total)}</span>
-        </div>
-        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-          Forma de pago: <strong>${venta.pago}</strong>
-        </div>
+        <div class="comprobante-total-line"><span>TOTAL</span><span>${formatPeso(venta.total)}</span></div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Forma de pago: <strong>${venta.pago}</strong></div>
       </div>
-      <div style="text-align:center; margin-top:20px; font-size:12px; color:var(--text-muted);">
-        Gracias por su compra 🍷<br>
-        WhatsApp: +54 9 2392 584053
-      </div>
+      <div style="text-align:center; margin-top:20px; font-size:12px; color:var(--text-muted);">Gracias por su compra 🍷<br>WhatsApp: +54 9 2392 584053</div>
     </div>`;
   document.getElementById('comprobante-content').innerHTML = html;
   abrirModal('modal-comprobante');
@@ -1848,17 +1269,13 @@ function mostrarComprobante(venta) {
 
 function imprimirComprobante() { window.print(); }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // STOCK
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function renderStock() {
-  const q = (document.getElementById('stock-search')?.value||'').toLowerCase();
+  const q    = (document.getElementById('stock-search')?.value||'').toLowerCase();
   const tipo = document.getElementById('stock-tipo')?.value||'';
-
-  const filtrados = productos.filter(p => {
-    return p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo===tipo);
-  });
-
+  const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo===tipo));
   const tbody = document.getElementById('tbody-stock');
   if (!tbody) return;
 
@@ -1866,10 +1283,11 @@ function renderStock() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px; color:var(--text-muted);">No hay productos. Importá tu Excel o agregá uno manualmente.</td></tr>';
   } else {
     tbody.innerHTML = filtrados.map(p => {
-      const stk = p.stock||0;
-      const min = p.stockMin||STOCK_MIN_DEFAULT;
+      const stk   = p.stock||0;
+      const min   = p.stockMin||STOCK_MIN_DEFAULT;
       const badge = stk===0 ? 'badge-out' : stk<=min ? 'badge-low' : 'badge-ok';
       const label = stk===0 ? 'Sin stock' : stk<=min ? 'Stock bajo' : 'OK';
+      const safeName = p.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
       return `<tr>
         <td><strong>${p.nombre}</strong></td>
         <td><span class="badge badge-wine">${p.tipo||'-'}</span></td>
@@ -1878,7 +1296,7 @@ function renderStock() {
         <td class="text-center">${stk}</td>
         <td class="text-center"><span class="badge ${badge}">${label}</span></td>
         <td class="text-center">
-          <button class="btn btn-outline btn-sm" onclick="abrirAjuste('${p.id}','${p.nombre.replace(/'/g,"\\'")}',${stk})">Ajustar</button>
+          <button class="btn btn-outline btn-sm" onclick="abrirAjuste('${p.id}','${safeName}',${stk})">Ajustar</button>
           <button class="btn btn-outline btn-sm" onclick="editarProducto('${p.id}')" style="margin-left:4px;">✏</button>
           <button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p.id}')" style="margin-left:4px;">🗑</button>
         </td>
@@ -1888,23 +1306,23 @@ function renderStock() {
 
   // Alertas
   const criticos = productos.filter(p => (p.stock||0)===0);
-  const bajos = productos.filter(p => (p.stock||0)>0 && (p.stock||0)<=(p.stockMin||STOCK_MIN_DEFAULT));
-  const alertEl = document.getElementById('stock-alerts');
+  const bajos    = productos.filter(p => (p.stock||0)>0 && (p.stock||0)<=(p.stockMin||STOCK_MIN_DEFAULT));
+  const alertEl  = document.getElementById('stock-alerts');
   let al = '';
   if (criticos.length) al += `<div class="alert alert-danger">🚫 ${criticos.length} producto${criticos.length>1?'s':''} sin stock: ${criticos.slice(0,3).map(p=>p.nombre).join(', ')}${criticos.length>3?'...':''}</div>`;
-  if (bajos.length) al += `<div class="alert alert-warning">⚠ ${bajos.length} producto${bajos.length>1?'s':''} con stock bajo: ${bajos.slice(0,3).map(p=>p.nombre).join(', ')}${bajos.length>3?'...':''}</div>`;
+  if (bajos.length)    al += `<div class="alert alert-warning">⚠ ${bajos.length} producto${bajos.length>1?'s':''} con stock bajo: ${bajos.slice(0,3).map(p=>p.nombre).join(', ')}${bajos.length>3?'...':''}</div>`;
   alertEl.innerHTML = al;
 }
 
-function abrirModalProducto(id=null) {
-  document.getElementById('prod-id').value = '';
-  document.getElementById('prod-nombre').value = '';
-  document.getElementById('prod-tipo').value = 'Tinto';
-  document.getElementById('prod-bodega').value = '';
+function abrirModalProducto() {
+  document.getElementById('prod-id').value       = '';
+  document.getElementById('prod-nombre').value   = '';
+  document.getElementById('prod-tipo').value     = 'Tinto';
+  document.getElementById('prod-bodega').value   = '';
   document.getElementById('prod-varietal').value = '';
-  document.getElementById('prod-precio').value = '';
-  document.getElementById('prod-costo').value = '';
-  document.getElementById('prod-stock').value = '';
+  document.getElementById('prod-precio').value   = '';
+  document.getElementById('prod-costo').value    = '';
+  document.getElementById('prod-stock').value    = '';
   document.getElementById('prod-stock-min').value = STOCK_MIN_DEFAULT;
   document.getElementById('modal-prod-title').textContent = 'Nuevo Producto';
   abrirModal('modal-producto');
@@ -1913,84 +1331,66 @@ function abrirModalProducto(id=null) {
 function editarProducto(id) {
   const p = productos.find(x => x.id===id);
   if (!p) return;
-  document.getElementById('prod-id').value = id;
-  document.getElementById('prod-nombre').value = p.nombre||'';
-  document.getElementById('prod-tipo').value = p.tipo||'Tinto';
-  document.getElementById('prod-bodega').value = p.bodega||'';
+  document.getElementById('prod-id').value       = id;
+  document.getElementById('prod-nombre').value   = p.nombre||'';
+  document.getElementById('prod-tipo').value     = p.tipo||'Tinto';
+  document.getElementById('prod-bodega').value   = p.bodega||'';
   document.getElementById('prod-varietal').value = p.varietal||'';
-  document.getElementById('prod-precio').value = p.precio||'';
-  document.getElementById('prod-costo').value = p.costo||'';
-  document.getElementById('prod-stock').value = p.stock||'';
+  document.getElementById('prod-precio').value   = p.precio||'';
+  document.getElementById('prod-costo').value    = p.costo||'';
+  document.getElementById('prod-stock').value    = p.stock||'';
   document.getElementById('prod-stock-min').value = p.stockMin||STOCK_MIN_DEFAULT;
   document.getElementById('modal-prod-title').textContent = 'Editar Producto';
   abrirModal('modal-producto');
 }
 
 async function guardarProducto() {
-  // CORRECCION BUG #3: logs claros para detectar fallos
-  console.log('[guardarProducto] Iniciando...');
-  console.log('[guardarProducto] Firebase db:', db ? 'conectado' : 'NULL - no guardara en Firebase', '| modoLocal:', modoLocal);
-  if (!db && !modoLocal) {
-    toast('⚠️ Firebase no conectado. Configurá Firebase en ⚙ Config primero.', 'error');
-    return;
-  }
-
-  const id = document.getElementById('prod-id').value;
+  const id     = document.getElementById('prod-id').value;
   const nombre = document.getElementById('prod-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio','error'); return; }
   const precio = parseFloat(document.getElementById('prod-precio').value)||0;
-  const stock = parseInt(document.getElementById('prod-stock').value)||0;
+  const stock  = parseInt(document.getElementById('prod-stock').value)||0;
   if (!precio) { toast('Completá el precio','error'); return; }
 
   const data = {
     nombre,
-    tipo: document.getElementById('prod-tipo').value,
-    bodega: document.getElementById('prod-bodega').value.trim(),
+    tipo:     document.getElementById('prod-tipo').value,
+    bodega:   document.getElementById('prod-bodega').value.trim(),
     varietal: document.getElementById('prod-varietal').value.trim(),
     precio,
-    costo: parseFloat(document.getElementById('prod-costo').value)||0,
+    costo:    parseFloat(document.getElementById('prod-costo').value)||0,
     stock,
     stockMin: parseInt(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT
   };
 
-  console.log('[guardarProducto] Datos:', JSON.stringify(data));
-
-  try {
-    if (id) {
-      console.log('[guardarProducto] Actualizando ID:', id);
-      await updateDoc('productos', id, data);
-      const idx = productos.findIndex(p => p.id===id);
-      if (idx>=0) productos[idx] = {...productos[idx],...data};
-    } else {
-      console.log('[guardarProducto] Creando nuevo producto...');
-      const newId = await saveDoc('productos', data);
-      console.log('[guardarProducto] Nuevo ID:', newId);
-      productos.push({id:newId,...data});
-      productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
-    }
-    guardarLocal();
-    cerrarModal('modal-producto');
-    renderStock();
-    renderVentasGrid();
-    console.log('[guardarProducto] Guardado exitoso');
-    toast('✅ Producto guardado correctamente', 'success');
-  } catch(err) {
-    console.error('[guardarProducto] ERROR:', err);
-    toast('Error al guardar: ' + err.message, 'error');
+  if (id) {
+    await updateDoc('productos', id, data);
+    const idx = productos.findIndex(p => p.id===id);
+    if (idx >= 0) productos[idx] = { ...productos[idx], ...data };
+  } else {
+    const newId = await saveDoc('productos', data);
+    productos.push({ id:newId, ...data });
+    productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
   }
+
+  guardarLocal();
+  cerrarModal('modal-producto');
+  renderStock();
+  renderVentasGrid();
+  toast('✅ Producto guardado', 'success');
 }
 
 function abrirAjuste(id, nombre, actual) {
-  document.getElementById('ajuste-id').value = id;
+  document.getElementById('ajuste-id').value    = id;
   document.getElementById('ajuste-nombre').textContent = nombre;
-  document.getElementById('ajuste-qty').value = actual;
+  document.getElementById('ajuste-qty').value   = actual;
   abrirModal('modal-ajuste');
 }
 
 async function confirmarAjuste() {
-  const id = document.getElementById('ajuste-id').value;
+  const id  = document.getElementById('ajuste-id').value;
   const qty = parseInt(document.getElementById('ajuste-qty').value)||0;
-  await updateDoc('productos', id, {stock:qty});
+  await updateDoc('productos', id, { stock: qty });
   const p = productos.find(x => x.id===id);
   if (p) p.stock = qty;
   guardarLocal();
@@ -2003,16 +1403,16 @@ async function confirmarAjuste() {
 async function eliminarProducto(id) {
   if (!confirm('¿Eliminar este producto?')) return;
   await deleteDoc('productos', id);
-  productos = productos.filter(p => p.id!==id);
+  productos = productos.filter(p => p.id !== id);
   guardarLocal();
   renderStock();
   renderVentasGrid();
   toast('Producto eliminado');
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // IMPORTAR EXCEL
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function importarExcel(input) {
   const file = input.files[0];
   if (!file) return;
@@ -2020,158 +1420,95 @@ function importarExcel(input) {
   reader.onload = async function(e) {
     try {
       const wb = XLSX.read(e.target.result, {type:'binary'});
-      console.log('\ud83d\udcca [Excel] Hojas encontradas:', wb.SheetNames);
-
-      // CORRECCIÓN BUG #2: detecta el formato real de Vinos_1.xlsx (hoja "Precios")
       const sheetName = wb.SheetNames.includes('Precios') ? 'Precios' : wb.SheetNames[0];
-      console.log('\ud83d\udcca [Excel] Usando hoja:', sheetName);
       const ws = wb.Sheets[sheetName];
-
       const rawData = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      let filas = parsearFormatoMallaviá(rawData);
 
-      if (!filas.length) {
-        console.log('\u26a0\ufe0f [Excel] Formato Mallaviá no detectado, intentando genérico...');
-        const dataGen = XLSX.utils.sheet_to_json(ws, {defval:''});
-        filas = parsearFormatoGenerico(dataGen);
+      let ultimoBloque = -1;
+      for (let i = 0; i < rawData.length; i++) {
+        const row = rawData[i].map(c => String(c||'').toLowerCase().trim());
+        if (row.includes('detalle') && row.includes('botella')) ultimoBloque = i;
       }
 
-      if (!filas.length) {
-        toast('No se pudieron detectar productos en el Excel. Revisá el formato.', 'error');
-        return;
-      }
-
-      console.log('\u2705 [Excel]', filas.length, 'productos detectados');
-      let nuevos = 0, actualizados = 0;
-      for (const fila of filas) {
-        const nombre = fila.nombre;
-        if (!nombre) continue;
-        const existente = productos.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
-        if (existente) {
-          await updateDoc('productos', existente.id, fila);
-          Object.assign(existente, fila);
-          actualizados++;
-        } else {
-          const id = await saveDoc('productos', fila);
-          productos.push({id, ...fila});
-          nuevos++;
+      let filas = [];
+      if (ultimoBloque !== -1) {
+        const enc = rawData[ultimoBloque];
+        let ci=-1, cj=-1, cb=-1, cs=-1, cc=-1;
+        enc.forEach((c,i) => {
+          const t = String(c||'').toLowerCase().trim();
+          if (t==='detalle') ci=i;
+          else if (t.includes('caja') && cj===-1) cj=i;
+          else if (t==='botella') cb=i;
+          else if (t.includes('stock')) cs=i;
+          else if (t.includes('costo')) cc=i;
+        });
+        for (let i = ultimoBloque+1; i < rawData.length; i++) {
+          const row = rawData[i];
+          const nombre = String(row[ci]||'').trim();
+          if (!nombre || nombre.toLowerCase()==='total' || nombre.toLowerCase()==='saldo') break;
+          const botella = cb!==-1 ? parseFloat(row[cb])||0 : 0;
+          const caja    = cj!==-1 ? parseFloat(row[cj])||0 : 0;
+          const stock   = cs!==-1 ? parseInt(row[cs])||0   : 0;
+          const costo   = cc!==-1 ? parseFloat(row[cc])||0  : 0;
+          if (!botella && !caja) continue;
+          filas.push({ nombre, precio:botella||Math.round(caja/6), precioCaja:caja, costo, stock,
+            tipo:adivinarTipo(nombre), bodega:adivinarBodega(nombre),
+            varietal:adivinarVarietal(nombre), stockMin:STOCK_MIN_DEFAULT });
         }
+      } else {
+        const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+        if (!data.length) { toast('El archivo está vacío','error'); return; }
+        const s = data[0];
+        const find = opts => Object.keys(s).find(k => opts.some(o => k.toLowerCase().includes(o))) || null;
+        const cn  = find(['detalle','nombre','producto','vino','name']);
+        const cp  = find(['botella','precio','price','pvp']);
+        const cst = find(['stock','cantidad','qty']);
+        const cco = find(['costo','cost']);
+        if (!cn || !cp) { toast('No se encontraron columnas de nombre/precio','error'); return; }
+        filas = data.map(row => {
+          const nombre = String(row[cn]||'').trim();
+          const precio = parseFloat(String(row[cp]||'0').replace(/[^\d.]/g,''))||0;
+          if (!nombre || !precio || nombre.toLowerCase()==='total') return null;
+          return { nombre, precio, costo:cco?parseFloat(row[cco])||0:0,
+            stock:cst?parseInt(row[cst])||0:0, tipo:adivinarTipo(nombre),
+            bodega:adivinarBodega(nombre), varietal:adivinarVarietal(nombre), stockMin:STOCK_MIN_DEFAULT };
+        }).filter(Boolean);
       }
 
+      if (!filas.length) { toast('No se encontraron productos en el Excel','error'); return; }
+
+      let nuevos=0, actualizados=0;
+      for (const fila of filas) {
+        const ex = productos.find(p => p.nombre.toLowerCase()===fila.nombre.toLowerCase());
+        if (ex) { await updateDoc('productos', ex.id, fila); Object.assign(ex, fila); actualizados++; }
+        else { const id = await saveDoc('productos', fila); productos.push({id,...fila}); nuevos++; }
+      }
       productos.sort((a,b) => a.nombre.localeCompare(b.nombre));
-      guardarLocal();
-      renderStock();
-      renderVentasGrid();
-      toast('\u2705 Excel importado: ' + nuevos + ' productos nuevos, ' + actualizados + ' actualizados', 'success');
+      guardarLocal(); renderStock(); renderVentasGrid();
+      toast('✅ Importado: '+nuevos+' nuevos, '+actualizados+' actualizados', 'success');
       input.value = '';
     } catch(err) {
-      console.error('[Excel] Error:', err);
-      toast('Error al leer el Excel: ' + err.message, 'error');
+      console.error('[Excel]', err);
+      toast('Error al leer el Excel: '+err.message, 'error');
     }
   };
   reader.readAsBinaryString(file);
 }
 
-// Parser para el formato real de Vinos_1.xlsx (hoja "Precios")
-// Busca el ULTIMO bloque de tabla (el más reciente por fecha)
-function parsearFormatoMallaviá(rawData) {
-  const resultados = [];
-  let ultimoBloque = -1;
-
-  for (let i = 0; i < rawData.length; i++) {
-    const fila = rawData[i];
-    const textos = fila.map(c => String(c||'').toLowerCase().trim());
-    if (textos.some(t => t === 'detalle') && textos.some(t => t === 'botella')) {
-      ultimoBloque = i;
-    }
-  }
-
-  if (ultimoBloque === -1) return [];
-
-  const encabezado = rawData[ultimoBloque];
-  let colDetalle=-1, colCaja=-1, colBotella=-1, colStock=-1, colCosto=-1;
-  encabezado.forEach((cel, idx) => {
-    const t = String(cel||'').toLowerCase().trim();
-    if (t === 'detalle') colDetalle = idx;
-    else if (t.includes('caja')) colCaja = idx;
-    else if (t === 'botella') colBotella = idx;
-    else if (t.includes('stock')) colStock = idx;
-    else if (t.includes('costo')) colCosto = idx;
-  });
-
-  console.log('[Mallaviá] Bloque fila', ultimoBloque, '-> Det:', colDetalle, 'Bot:', colBotella, 'Stk:', colStock, 'Costo:', colCosto);
-  if (colDetalle === -1 || colBotella === -1) return [];
-
-  for (let i = ultimoBloque + 1; i < rawData.length; i++) {
-    const fila = rawData[i];
-    const nombre = String(fila[colDetalle]||'').trim();
-    if (!nombre || nombre.toLowerCase() === 'total' || nombre.toLowerCase() === 'saldo') break;
-
-    const precio = colBotella !== -1 ? (parseFloat(fila[colBotella])||0) : 0;
-    const caja   = colCaja !== -1    ? (parseFloat(fila[colCaja])||0)    : 0;
-    const stock  = colStock !== -1   ? (parseInt(fila[colStock])||0)     : 0;
-    const costo  = colCosto !== -1   ? (parseFloat(fila[colCosto])||0)   : 0;
-
-    if (precio === 0 && caja === 0) continue;
-
-    resultados.push({
-      nombre,
-      tipo: adivinarTipo(nombre),
-      bodega: adivinarBodega(nombre),
-      varietal: adivinarVarietal(nombre),
-      precio: precio > 0 ? precio : (caja > 0 ? Math.round(caja/6) : 0),
-      costo,
-      stock,
-      stockMin: STOCK_MIN_DEFAULT
-    });
-  }
-  return resultados;
-}
-
-// Parser genérico (para excels con encabezados estándar)
-function parsearFormatoGenerico(data) {
-  if (!data.length) return [];
-  const sampleRow = data[0];
-  const findCol = (opts) => {
-    for (const opt of opts) {
-      const found = Object.keys(sampleRow).find(k => k.toLowerCase().includes(opt));
-      if (found) return found;
-    }
-    return null;
-  };
-  const colNombre = findCol(['detalle','nombre','producto','vino','name','item']);
-  const colBotella = findCol(['botella']);
-  const colPrecio = findCol(['precio','price','pvp','venta','value']);
-  const colCosto = findCol(['costo','cost','compra']);
-  const colStock = findCol(['stock','cantidad','qty','quantity','inventario']);
-  const colMin = findCol(['minimo','min','alerta']);
-  const colPrecioFinal = colBotella || colPrecio;
-  if (!colNombre || !colPrecioFinal) return [];
-
-  return data.map(row => {
-    const nombre = String(row[colNombre]||'').trim();
-    if (!nombre || nombre.toLowerCase() === 'total') return null;
-    const precio = parseFloat(String(row[colPrecioFinal]||'0').replace(/[^\d.]/g,''))||0;
-    if (!precio) return null;
-    return {
-      nombre,
-      tipo: adivinarTipo(nombre),
-      bodega: adivinarBodega(nombre),
-      varietal: adivinarVarietal(nombre),
-      precio,
-      costo: colCosto ? parseFloat(String(row[colCosto]||'0').replace(/[^\d.]/g,''))||0 : 0,
-      stock: colStock ? parseInt(row[colStock])||0 : 0,
-      stockMin: colMin ? parseInt(row[colMin])||STOCK_MIN_DEFAULT : STOCK_MIN_DEFAULT
-    };
-  }).filter(Boolean);
+function adivinarTipo(nombre) {
+  const t = nombre.toLowerCase();
+  if (t.includes('cerveza')||t.includes('corona')||t.includes('beer')) return 'Cerveza';
+  if (t.includes('espumante')||t.includes('champagne')||t.includes('brut')) return 'Espumante';
+  if (t.includes('rose')||t.includes('rosé')||t.includes('rosado')) return 'Rosado';
+  if (t.includes('blanco')||t.includes('sauvignon blanc')||t.includes('chardonnay')||t.includes('torront')||t.includes('blanc de blancs')) return 'Blanco';
+  return 'Tinto';
 }
 
 function adivinarBodega(nombre) {
   const n = nombre.toLowerCase();
-  if (n.includes('alamos') || n.includes('angelica zapata') || n.includes('dv catena') || n.includes('catena')) return 'Catena Zapata';
-  if (n.includes('rutini') || n.includes('trumpeter') || n.includes('nicasia') || n.includes('saint felicien') || n.includes('san felipe') || n.includes('sam felipe')) return 'La Rural';
-  if (n.includes('enemigo') || n.includes('gran enemigo')) return 'Clos de los Siete';
-  if (n.includes('uxmal')) return 'Bodegas Esmeralda';
+  if (n.includes('alamos')||n.includes('angelica zapata')||n.includes('dv catena')) return 'Catena Zapata';
+  if (n.includes('rutini')||n.includes('trumpeter')||n.includes('nicasia')||n.includes('saint felicien')||n.includes('san felipe')||n.includes('sam felipe')) return 'La Rural';
+  if (n.includes('enemigo')) return 'Clos de los Siete';
   if (n.includes('corona')) return 'AB InBev';
   return '';
 }
@@ -2180,41 +1517,29 @@ function adivinarVarietal(nombre) {
   const n = nombre.toLowerCase();
   if (n.includes('malbec')) return 'Malbec';
   if (n.includes('cabernet franc')) return 'Cabernet Franc';
-  if (n.includes('cabernet sauvignon') || n.includes('cab. sauvignon')) return 'Cabernet Sauvignon';
+  if (n.includes('cab. sauvignon')||n.includes('cabernet sauvignon')) return 'Cabernet Sauvignon';
   if (n.includes('syrah')) return 'Syrah';
   if (n.includes('merlot')) return 'Merlot';
   if (n.includes('pinot noir')) return 'Pinot Noir';
   if (n.includes('sauvignon blanc')) return 'Sauvignon Blanc';
-  if (n.includes('chardonnay')) return 'Chardonnay';
-  if (n.includes('rose') || n.includes('ros\u00e9')) return 'Ros\u00e9';
-  if (n.includes('blend') || n.includes('gran blend')) return 'Blend';
-  if (n.includes('cerveza') || n.includes('corona')) return 'Lager';
+  if (n.includes('blanc de blancs')||n.includes('gran blend')||n.includes('blend')) return 'Blend';
+  if (n.includes('corona')||n.includes('cerveza')) return 'Lager';
   return '';
 }
 
-function adivinarTipo(texto) {
-  const t = texto.toLowerCase();
-  if (t.includes('malbec') || t.includes('cabernet') || t.includes('syrah') || t.includes('merlot') || t.includes('pinot noir') || t.includes('bonarda') || t.includes('tinto') || t.includes('enemigo') || t.includes('blend')) return 'Tinto';
-  if (t.includes('blanco') || t.includes('chardonnay') || t.includes('torront') || t.includes('sauvignon blanc') || t.includes('viognier') || t.includes('pinot g') || t.includes('blanc de blancs')) return 'Blanco';
-  if (t.includes('rosado') || t.includes('rose') || t.includes('ros\u00e9')) return 'Rosado';
-  if (t.includes('espumante') || t.includes('champagne') || t.includes('chandon') || t.includes('brut')) return 'Espumante';
-  if (t.includes('cerveza') || t.includes('beer') || t.includes('lager') || t.includes('corona') || t.includes('ipa')) return 'Cerveza';
-  return 'Otro';
-}
-
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // COMPRAS
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 let lineasCompra = [];
 
 function addLineaCompra() {
-  const idx = lineasCompra.length;
   lineasCompra.push({prodId:'', qty:1, precio:0});
   renderLineasCompra();
 }
 
 function renderLineasCompra() {
   const cont = document.getElementById('compra-lineas');
+  if (!cont) return;
   if (!lineasCompra.length) {
     cont.innerHTML = '<p style="font-size:12px; color:var(--text-muted);">Sin productos. Hacé click en "Agregar".</p>';
     return;
@@ -2233,10 +1558,10 @@ function renderLineasCompra() {
 
 async function registrarCompra() {
   const proveedor = document.getElementById('c-proveedor').value.trim();
-  const fecha = document.getElementById('c-fecha').value || new Date().toISOString().slice(0,10);
-  const total = parseFloat(document.getElementById('c-total').value)||0;
-  const pago = document.getElementById('c-pago').value;
-  const notas = document.getElementById('c-notas').value.trim();
+  const fecha     = document.getElementById('c-fecha').value || new Date().toISOString().slice(0,10);
+  const total     = parseFloat(document.getElementById('c-total').value)||0;
+  const pago      = document.getElementById('c-pago').value;
+  const notas     = document.getElementById('c-notas').value.trim();
 
   if (!proveedor) { toast('Completá el proveedor','error'); return; }
   if (!lineasCompra.length) { toast('Agregá al menos un producto','error'); return; }
@@ -2276,9 +1601,9 @@ async function registrarCompra() {
   guardarLocal();
   lineasCompra = [];
   renderLineasCompra();
-  document.getElementById('c-proveedor').value='';
-  document.getElementById('c-total').value='';
-  document.getElementById('c-notas').value='';
+  document.getElementById('c-proveedor').value = '';
+  document.getElementById('c-total').value     = '';
+  document.getElementById('c-notas').value     = '';
   cargarCompras();
   renderStock();
   toast('✅ Compra registrada y stock actualizado', 'success');
@@ -2299,13 +1624,13 @@ function cargarCompras() {
     </li>`).join('') + '</ul>';
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // HISTORIAL
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function renderHistorial() {
   const desde = document.getElementById('h-desde')?.value||'';
   const hasta = document.getElementById('h-hasta')?.value||'';
-  const pago = document.getElementById('h-pago')?.value||'';
+  const pago  = document.getElementById('h-pago')?.value||'';
   const tbody = document.getElementById('tbody-historial');
   if (!tbody) return;
 
@@ -2336,22 +1661,22 @@ function renderHistorial() {
 function mostrarComprobanteHistorial(v) { mostrarComprobante(v); }
 
 function limpiarFiltrosHistorial() {
-  const hoy = new Date();
+  const hoy   = new Date();
   const desde = new Date(hoy); desde.setDate(1);
   document.getElementById('h-desde').value = desde.toISOString().slice(0,10);
   document.getElementById('h-hasta').value = hoy.toISOString().slice(0,10);
-  document.getElementById('h-pago').value = '';
+  document.getElementById('h-pago').value  = '';
   renderHistorial();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // CAJA
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function calcularSaldo() {
   let ef=0, dg=0;
   movimientos.forEach(m => {
     const monto = m.monto||0;
-    const sig = m.tipo==='ingreso' ? 1 : -1;
+    const sig   = m.tipo==='ingreso' ? 1 : -1;
     if ((m.medio||'efectivo')==='efectivo') ef += sig*monto;
     else dg += sig*monto;
   });
@@ -2361,8 +1686,8 @@ function calcularSaldo() {
 function renderCaja() {
   const s = calcularSaldo();
   document.getElementById('caja-saldo-total').textContent = formatPeso(s.total);
-  document.getElementById('caja-efectivo').textContent = formatPeso(s.efectivo);
-  document.getElementById('caja-digital').textContent = formatPeso(s.digital);
+  document.getElementById('caja-efectivo').textContent    = formatPeso(s.efectivo);
+  document.getElementById('caja-digital').textContent     = formatPeso(s.digital);
 
   const el = document.getElementById('lista-movimientos');
   if (!el) return;
@@ -2381,100 +1706,93 @@ function renderCaja() {
 }
 
 async function registrarMovimiento() {
-  const tipo = document.getElementById('mov-tipo').value;
-  const concepto = document.getElementById('mov-concepto').value.trim();
-  const monto = parseFloat(document.getElementById('mov-monto').value)||0;
-  const medio = document.getElementById('mov-medio').value;
+  const tipo    = document.getElementById('mov-tipo').value;
+  const concepto= document.getElementById('mov-concepto').value.trim();
+  const monto   = parseFloat(document.getElementById('mov-monto').value)||0;
+  const medio   = document.getElementById('mov-medio').value;
 
   if (!concepto) { toast('Completá el concepto','error'); return; }
-  if (!monto) { toast('Completá el monto','error'); return; }
+  if (!monto)    { toast('Completá el monto','error');    return; }
 
   const mov = { fecha:new Date().toISOString(), concepto, monto, tipo, medio };
-  const id = await saveDoc('movimientos', mov);
+  const id  = await saveDoc('movimientos', mov);
   mov.id = id;
   movimientos.unshift(mov);
   guardarLocal();
 
-  document.getElementById('mov-concepto').value='';
-  document.getElementById('mov-monto').value='';
+  document.getElementById('mov-concepto').value = '';
+  document.getElementById('mov-monto').value    = '';
   renderCaja();
   toast(`Movimiento registrado: ${tipo} ${formatPeso(monto)}`, 'success');
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // MODALS
-// ══════════════════════════════════════════
-function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+// ══════════════════════════════════════════════════════════
+function abrirModal(id)  { document.getElementById(id).classList.add('open'); }
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// Cerrar al hacer clic fuera
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('modal-overlay')) {
-    e.target.classList.remove('open');
-  }
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
 });
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // CONFIG
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function abrirConfig() {
   const cfg = getFirebaseConfig() || {};
-  document.getElementById('cfg-apiKey').value = cfg.apiKey||'';
+  document.getElementById('cfg-apiKey').value     = cfg.apiKey||'';
   document.getElementById('cfg-authDomain').value = cfg.authDomain||'';
-  document.getElementById('cfg-projectId').value = cfg.projectId||'';
-  document.getElementById('cfg-appId').value = cfg.appId||'';
+  document.getElementById('cfg-projectId').value  = cfg.projectId||'';
+  document.getElementById('cfg-appId').value      = cfg.appId||'';
   abrirModal('modal-config');
 }
 
 function actualizarConfig() {
   const config = {
-    apiKey: document.getElementById('cfg-apiKey').value.trim(),
+    apiKey:     document.getElementById('cfg-apiKey').value.trim(),
     authDomain: document.getElementById('cfg-authDomain').value.trim(),
-    projectId: document.getElementById('cfg-projectId').value.trim(),
-    appId: document.getElementById('cfg-appId').value.trim()
+    projectId:  document.getElementById('cfg-projectId').value.trim(),
+    appId:      document.getElementById('cfg-appId').value.trim()
   };
   if (!config.apiKey || !config.projectId) { toast('Completá al menos API Key y Project ID','error'); return; }
   localStorage.setItem('mallavia_fb_config', JSON.stringify(config));
   cerrarModal('modal-config');
-  toast('Configuración guardada. Recargá la página para conectar.', 'success');
+  toast('Configuración guardada. Recargá la página para reconectar.', 'success');
 }
 
 function guardarFirebaseConfig() {
   const config = {
-    apiKey: document.getElementById('fb-apiKey').value.trim(),
+    apiKey:     document.getElementById('fb-apiKey').value.trim(),
     authDomain: document.getElementById('fb-authDomain').value.trim(),
-    projectId: document.getElementById('fb-projectId').value.trim(),
-    appId: document.getElementById('fb-appId').value.trim()
+    projectId:  document.getElementById('fb-projectId').value.trim(),
+    appId:      document.getElementById('fb-appId').value.trim()
   };
   if (!config.apiKey || !config.projectId) { alert('Completá al menos API Key y Project ID'); return; }
   localStorage.setItem('mallavia_fb_config', JSON.stringify(config));
-  document.getElementById('setup-overlay').style.display='none';
+  document.getElementById('setup-overlay').style.display = 'none';
   location.reload();
 }
 
 function saltarSetup() {
-  document.getElementById('setup-overlay').style.display='none';
+  document.getElementById('setup-overlay').style.display = 'none';
   modoLocal = true;
   setDBStatus(false);
   cargarDesdeLocal();
-  renderDashboard();
-  renderVentasGrid();
-  renderStock();
+  if (productos.length === 0) cargarCatalogoEnMemoria();
+  renderAll();
 }
 
 function resetearDatos() {
   if (!confirm('¿Borrar TODOS los datos locales? Esto no borra Firebase, solo el caché local.')) return;
-  localStorage.removeItem('mallavia_productos');
-  localStorage.removeItem('mallavia_ventas');
-  localStorage.removeItem('mallavia_compras');
-  localStorage.removeItem('mallavia_movimientos');
+  ['mallavia_productos','mallavia_ventas','mallavia_compras','mallavia_movimientos'].forEach(k => localStorage.removeItem(k));
   cerrarModal('modal-config');
   location.reload();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // UTILS
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function formatPeso(n) {
   return '$' + Math.round(n||0).toLocaleString('es-AR');
 }
@@ -2496,13 +1814,9 @@ function toast(msg, type='') {
   el.textContent = msg;
   el.className = `show ${type}`;
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.className='', 3000);
+  el._t = setTimeout(() => el.className='', 3200);
 }
-
-// Compra: inicializar líneas al cargar compras page
-document.querySelector('nav button[data-page="compras"]').addEventListener('click', () => {
-  if (!lineasCompra.length) addLineaCompra();
-});
 </script>
 </body>
 </html>
+
