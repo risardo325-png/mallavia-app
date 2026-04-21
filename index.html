@@ -401,6 +401,11 @@
         <div class="stat-sub" id="dash-ventas-mes-cnt">0 transacciones</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">Ganancia hoy</div>
+        <div class="stat-value" id="dash-ganancia-hoy" style="color:var(--success);">$0</div>
+        <div class="stat-sub" id="dash-ganancia-mes-sub">este mes: $0</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Saldo en caja</div>
         <div class="stat-value" id="dash-caja">$0</div>
         <div class="stat-sub">efectivo + transferencias</div>
@@ -420,6 +425,10 @@
         <div class="card-title">🕐 Últimas ventas</div>
         <div id="dash-ultimas-list"><div class="loader"><div class="spinner"></div></div></div>
       </div>
+    </div>
+    <div class="card" style="margin-top:0;">
+      <div class="card-title">🏆 Más vendidos del mes</div>
+      <div id="dash-top-productos"><div class="loader"><div class="spinner"></div></div></div>
     </div>
     <div class="card" style="margin-top:0;">
       <div class="card-title">🚀 Acceso rápido</div>
@@ -465,7 +474,8 @@
         <div class="carrito-footer">
           <div class="form-group">
             <label>Cliente (opcional)</label>
-            <input type="text" id="venta-cliente" placeholder="Nombre del cliente...">
+            <input type="text" id="venta-cliente" placeholder="Nombre del cliente..." list="clientes-list">
+            <datalist id="clientes-list"></datalist>
           </div>
           <div class="form-group">
             <label>Forma de pago</label>
@@ -502,6 +512,13 @@
         <option value="Espumante">Espumantes</option>
         <option value="Cerveza">Cervezas</option>
       </select>
+      <select id="stock-sort" onchange="renderStock()">
+        <option value="nombre">Ordenar: Nombre</option>
+        <option value="stock-asc">Ordenar: Stock ↑</option>
+        <option value="stock-desc">Ordenar: Stock ↓</option>
+        <option value="precio-asc">Ordenar: Precio ↑</option>
+        <option value="precio-desc">Ordenar: Precio ↓</option>
+      </select>
       <button class="btn btn-primary" onclick="abrirModalProducto()">+ Agregar producto</button>
       <button class="btn btn-outline" onclick="document.getElementById('excel-import').click()">📥 Importar Excel</button>
       <input type="file" id="excel-import" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(this)">
@@ -513,7 +530,7 @@
           <thead>
             <tr>
               <th>Producto</th><th>Tipo</th><th>Bodega</th>
-              <th class="text-right">Precio</th><th class="text-center">Stock</th>
+              <th class="text-right">Botella</th><th class="text-right">Caja</th><th class="text-center">Stock</th>
               <th class="text-center">Estado</th><th class="text-center">Acciones</th>
             </tr>
           </thead>
@@ -529,13 +546,26 @@
     <div class="section-sub">Cargá una compra a proveedores para actualizar el stock.</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
       <div class="card">
-        <div class="card-title">Nueva compra</div>
-        <div class="form-group"><label>Proveedor / Bodega</label><input type="text" id="c-proveedor" placeholder="Ej: Peñaflor, Chandon..."></div>
-        <div class="form-group"><label>Fecha</label><input type="date" id="c-fecha"></div>
+        <div class="card-title">Nueva compra / Remito</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Proveedor / Bodega</label>
+            <input type="text" id="c-proveedor" placeholder="Ej: Peñaflor, Chandon..." list="proveedores-list" oninput="autocompletarProveedor()">
+            <datalist id="proveedores-list"></datalist>
+          </div>
+          <div class="form-group"><label>Nro. Remito</label><input type="text" id="c-remito" placeholder="Ej: R-001234" list="remitos-list" onchange="buscarPorRemito()"><datalist id="remitos-list"></datalist></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Fecha</label><input type="date" id="c-fecha"></div>
+          <div class="form-group" style="display:flex; align-items:flex-end;"><button class="btn btn-outline btn-sm" onclick="cargarUltimoRemito()" style="width:100%;">📋 Cargar último remito</button></div>
+        </div>
         <div id="compra-items">
           <div style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Productos comprados</div>
           <div id="compra-lineas"></div>
-          <button class="btn btn-outline btn-sm" onclick="addLineaCompra()" style="margin-top:8px;">+ Agregar producto</button>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; align-items:center;">
+            <button class="btn btn-outline btn-sm" onclick="addLineaCompra()">+ Agregar producto</button>
+            <span style="font-size:13px; font-weight:600; color:var(--wine-dark);" id="compra-subtotal-display"></span>
+          </div>
         </div>
         <hr class="divider">
         <div class="form-row">
@@ -582,7 +612,7 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Pago</th><th class="text-right">Total</th><th class="text-center">Acciones</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Pago</th><th class="text-right">Total</th><th class="text-right">Ganancia</th><th class="text-center">Acciones</th></tr></thead>
           <tbody id="tbody-historial"></tbody>
         </table>
       </div>
@@ -715,13 +745,15 @@
         <div class="form-group"><label>Bodega / Marca</label><input type="text" id="prod-bodega" placeholder="Ej: Chandon, Trapiche..."></div>
         <div class="form-group"><label>Varietal / Descripción</label><input type="text" id="prod-varietal" placeholder="Ej: Malbec, Torrontés..."></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Precio de venta ($) *</label><input type="number" id="prod-precio" placeholder="0"></div>
-        <div class="form-group"><label>Precio de costo ($)</label><input type="number" id="prod-costo" placeholder="0"></div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Precio Botella ($) *</label><input type="number" id="prod-precio" placeholder="0"></div>
+        <div class="form-group"><label>Precio Caja ($)</label><input type="number" id="prod-precioCaja" placeholder="0"></div>
+        <div class="form-group"><label>Precio Compra ($)</label><input type="number" id="prod-costo" placeholder="0"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Stock actual (unidades) *</label><input type="number" id="prod-stock" placeholder="0" min="0"></div>
-        <div class="form-group"><label>Stock mínimo (alerta)</label><input type="number" id="prod-stock-min" placeholder="3" min="0"></div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Stock actual (u.) *</label><input type="number" id="prod-stock" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Stock mínimo</label><input type="number" id="prod-stock-min" placeholder="3" min="0"></div>
+        <div class="form-group"><label>Proveedor habitual</label><input type="text" id="prod-proveedor" placeholder="Ej: La Rural"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -817,6 +849,32 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="cerrarModal('modal-boleta')">Cerrar</button>
       <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TIPO VENTA (Botella/Caja) -->
+<div class="modal-overlay" id="modal-tipo-venta">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span>🍷 ¿Cómo vendés?</span>
+      <button class="close-btn" onclick="cerrarModal('modal-tipo-venta')">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:15px; font-weight:600; margin-bottom:6px;" id="tv-nombre"></p>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:20px;" id="tv-precios"></p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button class="btn btn-gold btn-lg" onclick="confirmarTipoVenta('botella')" style="flex:1; justify-content:center; flex-direction:column; padding:18px 12px;">
+          <span style="font-size:24px;">🍾</span>
+          <span style="font-size:14px; font-weight:600;">Botella</span>
+          <span style="font-size:16px; font-weight:700;" id="tv-precio-bot"></span>
+        </button>
+        <button class="btn btn-primary btn-lg" onclick="confirmarTipoVenta('caja')" id="tv-btn-caja" style="flex:1; justify-content:center; flex-direction:column; padding:18px 12px;">
+          <span style="font-size:24px;">📦</span>
+          <span style="font-size:14px; font-weight:600;">Caja</span>
+          <span style="font-size:16px; font-weight:700;" id="tv-precio-caja"></span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -979,6 +1037,7 @@ function renderAll() {
   renderHistorial();
   renderCaja();
   cargarCompras();
+  renderClientes();
 }
 
 function setFechaHoy() {
@@ -1196,10 +1255,16 @@ function renderDashboard() {
   const totalHoy = ventasHoy.reduce((a,v) => a+(v.total||0), 0);
   const totalMes = ventasMes.reduce((a,v) => a+(v.total||0), 0);
 
+  // Ganancias
+  const gananciaHoy = ventasHoy.reduce((a,v) => a+(v.ganancia||0), 0);
+  const gananciaMes = ventasMes.reduce((a,v) => a+(v.ganancia||0), 0);
+
   document.getElementById('dash-ventas-hoy').textContent     = formatPeso(totalHoy);
   document.getElementById('dash-ventas-hoy-cnt').textContent = `${ventasHoy.length} transacciones`;
   document.getElementById('dash-ventas-mes').textContent     = formatPeso(totalMes);
   document.getElementById('dash-ventas-mes-cnt').textContent = `${ventasMes.length} transacciones`;
+  document.getElementById('dash-ganancia-hoy').textContent   = formatPeso(gananciaHoy);
+  document.getElementById('dash-ganancia-mes-sub').textContent = `este mes: ${formatPeso(gananciaMes)}`;
   document.getElementById('dash-productos').textContent      = productos.length;
 
   const criticos = productos.filter(p => (p.stock||0) <= (p.stockMin||STOCK_MIN_DEFAULT));
@@ -1231,6 +1296,28 @@ function renderDashboard() {
         <span style="font-weight:600; color:var(--wine-dark);">${formatPeso(v.total)}</span>
       </li>`).join('') + '</ul>';
   }
+
+  // Top productos del mes
+  const topEl = document.getElementById('dash-top-productos');
+  if (topEl) {
+    const prodCount = {};
+    ventasMes.forEach(v => {
+      (v.items||[]).forEach(i => {
+        const key = i.nombre || i.prodId;
+        prodCount[key] = (prodCount[key]||0) + i.qty;
+      });
+    });
+    const sorted = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).slice(0,6);
+    if (!sorted.length) {
+      topEl.innerHTML = '<p style="font-size:13px; color:var(--text-muted);">Sin ventas este mes</p>';
+    } else {
+      topEl.innerHTML = '<ul class="mini-list">' + sorted.map(([nombre, qty], i) => `
+        <li>
+          <span><span style="color:var(--gold); font-weight:600; margin-right:6px;">#${i+1}</span>${nombre}</span>
+          <span class="badge badge-gold">${qty} vendidos</span>
+        </li>`).join('') + '</ul>';
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1243,6 +1330,10 @@ function renderVentasGrid() {
   const tipo = document.getElementById('filtro-tipo')?.value||'';
   const grid = document.getElementById('wines-grid');
   if (!grid) return;
+
+  // Populate client autocomplete
+  const cliDl = document.getElementById('clientes-list');
+  if (cliDl) cliDl.innerHTML = clientes.map(c => `<option value="${c.nombre}">`).join('');
 
   const filtrados = productos.filter(p => {
     return p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo === tipo);
@@ -1257,10 +1348,12 @@ function renderVentasGrid() {
     const sinStock = (p.stock||0) === 0;
     const bajito   = (p.stock||0) > 0 && (p.stock||0) <= (p.stockMin||STOCK_MIN_DEFAULT);
     const onclick  = sinStock ? '' : `onclick="agregarAlCarrito('${p.id}')"`;
+    const pCaja = p.precioCaja ? `<span style="font-size:11px; color:var(--text-muted);">Caja: ${formatPeso(p.precioCaja)}</span>` : '';
     return `<div class="wine-card${sinStock?' out':''}" ${onclick}>
       <div class="wine-card-name">${p.nombre}</div>
       <div class="wine-card-info">${p.tipo||''} ${p.bodega?'· '+p.bodega:''} ${p.varietal?'· '+p.varietal:''}</div>
       <div class="wine-card-price">${formatPeso(p.precio||0)}</div>
+      ${pCaja}
       <div class="wine-card-stock" style="color:${sinStock?'var(--danger)':bajito?'var(--warning)':'var(--success)'}">
         ${sinStock?'Sin stock':bajito?`Stock bajo: ${p.stock} u.`:`Stock: ${p.stock} u.`}
       </div>
@@ -1268,18 +1361,51 @@ function renderVentasGrid() {
   }).join('');
 }
 
+let _pendingProdId = null;
+
 function agregarAlCarrito(prodId) {
   const prod = productos.find(p => p.id === prodId);
   if (!prod || (prod.stock||0) === 0) return;
-  const idx = carrito.findIndex(c => c.prodId === prodId);
+
+  // Si tiene precioCaja, mostrar selector
+  if (prod.precioCaja && prod.precioCaja > 0) {
+    _pendingProdId = prodId;
+    document.getElementById('tv-nombre').textContent = prod.nombre;
+    document.getElementById('tv-precios').textContent = `Stock: ${prod.stock} u.`;
+    document.getElementById('tv-precio-bot').textContent = formatPeso(prod.precio||0);
+    document.getElementById('tv-precio-caja').textContent = formatPeso(prod.precioCaja);
+    document.getElementById('tv-btn-caja').style.display = prod.precioCaja ? 'flex' : 'none';
+    abrirModal('modal-tipo-venta');
+    return;
+  }
+
+  // Sin precio caja, agregar directo como botella
+  agregarItemCarrito(prodId, prod.precio||0, 'botella');
+}
+
+function confirmarTipoVenta(tipo) {
+  if (!_pendingProdId) return;
+  const prod = productos.find(p => p.id === _pendingProdId);
+  if (!prod) return;
+  const precio = tipo === 'caja' ? (prod.precioCaja||prod.precio||0) : (prod.precio||0);
+  agregarItemCarrito(_pendingProdId, precio, tipo);
+  cerrarModal('modal-tipo-venta');
+  _pendingProdId = null;
+}
+
+function agregarItemCarrito(prodId, precio, tipoVenta) {
+  const prod = productos.find(p => p.id === prodId);
+  if (!prod) return;
+  const key = prodId + '_' + tipoVenta;
+  const idx = carrito.findIndex(c => c.key === key);
   if (idx >= 0) {
     if (carrito[idx].qty >= (prod.stock||0)) { toast('No hay más stock disponible', 'error'); return; }
     carrito[idx].qty++;
   } else {
-    carrito.push({ prodId, nombre:prod.nombre, precio:prod.precio||0, qty:1 });
+    carrito.push({ key, prodId, nombre: prod.nombre + (tipoVenta==='caja'?' (Caja)':''), precio, qty:1, tipoVenta, costoUnit: prod.costo||0 });
   }
   renderCarrito();
-  toast(`${prod.nombre} agregado`);
+  toast(`${prod.nombre} (${tipoVenta}) agregado`);
 }
 
 function renderCarrito() {
@@ -1325,11 +1451,12 @@ async function procesarVenta() {
   const cliente = document.getElementById('venta-cliente').value.trim();
   const pago    = document.getElementById('venta-pago').value;
   const total   = carrito.reduce((a,c) => a + c.precio*c.qty, 0);
+  const gananciaTotal = carrito.reduce((a,c) => a + (c.precio - (c.costoUnit||0))*c.qty, 0);
   const fecha   = new Date().toISOString();
 
   const venta = {
-    fecha, cliente, pago, total,
-    items: carrito.map(c => ({prodId:c.prodId, nombre:c.nombre, precio:c.precio, qty:c.qty}))
+    fecha, cliente, pago, total, ganancia: gananciaTotal,
+    items: carrito.map(c => ({prodId:c.prodId, nombre:c.nombre, precio:c.precio, qty:c.qty, tipoVenta:c.tipoVenta||'botella', costoUnit:c.costoUnit||0}))
   };
 
   // ── Gestión de cliente automático ──
@@ -1359,7 +1486,7 @@ async function procesarVenta() {
 
   // Registrar en caja (solo si no es cuenta corriente)
   if (pago !== 'cuenta-corriente') {
-    const mov = { fecha, concepto:`Venta a ${cliente||'cliente'}`, monto:total, tipo:'ingreso', medio:pago };
+    const mov = { fecha, concepto:`Venta a ${cliente||'cliente'}`, monto:total, tipo:'ingreso', medio:pago, ventaId:id };
     const mid = await saveDoc('movimientos', mov);
     mov.id = mid;
     movimientos.unshift(mov);
@@ -1374,6 +1501,8 @@ async function procesarVenta() {
 }
 
 function mostrarComprobante(venta) {
+  const gananciaLine = (venta.ganancia && venta.ganancia > 0)
+    ? `<div style="font-size:12px; color:var(--success); margin-top:4px;">Ganancia: ${formatPeso(venta.ganancia)}</div>` : '';
   const html = `
     <div class="comprobante">
       <div class="comprobante-header">
@@ -1386,7 +1515,7 @@ function mostrarComprobante(venta) {
         <table>
           <thead><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-right">P.Unit.</th><th class="text-right">Subtotal</th></tr></thead>
           <tbody>${venta.items.map(i=>`<tr>
-            <td>${i.nombre}</td>
+            <td>${i.nombre} <span style="font-size:10px;color:var(--text-muted);">${i.tipoVenta==='caja'?'📦':''}</span></td>
             <td class="text-center">${i.qty}</td>
             <td class="text-right">${formatPeso(i.precio)}</td>
             <td class="text-right">${formatPeso(i.precio*i.qty)}</td>
@@ -1394,6 +1523,7 @@ function mostrarComprobante(venta) {
         </table>
         <div class="comprobante-total-line"><span>TOTAL</span><span>${formatPeso(venta.total)}</span></div>
         <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Forma de pago: <strong>${venta.pago}</strong></div>
+        ${gananciaLine}
       </div>
       <div style="text-align:center; margin-top:20px; font-size:12px; color:var(--text-muted);">Gracias por su compra 🍷<br>WhatsApp: +54 9 2392 584053</div>
     </div>`;
@@ -1409,12 +1539,23 @@ function imprimirComprobante() { window.print(); }
 function renderStock() {
   const q    = (document.getElementById('stock-search')?.value||'').toLowerCase();
   const tipo = document.getElementById('stock-tipo')?.value||'';
-  const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo===tipo));
+  const sort = document.getElementById('stock-sort')?.value||'nombre';
+  let filtrados = productos.filter(p => p.nombre.toLowerCase().includes(q) && (!tipo || p.tipo===tipo));
+  
+  // Sorting
+  switch(sort) {
+    case 'stock-asc':  filtrados.sort((a,b) => (a.stock||0)-(b.stock||0)); break;
+    case 'stock-desc': filtrados.sort((a,b) => (b.stock||0)-(a.stock||0)); break;
+    case 'precio-asc': filtrados.sort((a,b) => (a.precio||0)-(b.precio||0)); break;
+    case 'precio-desc':filtrados.sort((a,b) => (b.precio||0)-(a.precio||0)); break;
+    default: filtrados.sort((a,b) => a.nombre.localeCompare(b.nombre));
+  }
+  
   const tbody = document.getElementById('tbody-stock');
   if (!tbody) return;
 
   if (!filtrados.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px; color:var(--text-muted);">No hay productos. Importá tu Excel o agregá uno manualmente.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px; color:var(--text-muted);">No hay productos. Importá tu Excel o agregá uno manualmente.</td></tr>';
   } else {
     tbody.innerHTML = filtrados.map(p => {
       const stk   = p.stock||0;
@@ -1422,11 +1563,13 @@ function renderStock() {
       const badge = stk===0 ? 'badge-out' : stk<=min ? 'badge-low' : 'badge-ok';
       const label = stk===0 ? 'Sin stock' : stk<=min ? 'Stock bajo' : 'OK';
       const safeName = p.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      return `<tr>
-        <td><strong>${p.nombre}</strong></td>
+      const rowStyle = stk===0 ? 'style="opacity:0.5; background:var(--danger-bg);"' : stk<=min ? 'style="background:#fffbe6;"' : '';
+      return `<tr ${rowStyle}>
+        <td><strong>${p.nombre}</strong>${p.proveedorHabitual?`<br><span style="font-size:10px;color:var(--text-muted);">Prov: ${p.proveedorHabitual}</span>`:''}</td>
         <td><span class="badge badge-wine">${p.tipo||'-'}</span></td>
         <td style="color:var(--text-muted)">${p.bodega||'-'}</td>
         <td class="text-right"><strong>${formatPeso(p.precio||0)}</strong></td>
+        <td class="text-right" style="color:var(--text-muted);">${p.precioCaja ? formatPeso(p.precioCaja) : '—'}</td>
         <td class="text-center">${stk}</td>
         <td class="text-center"><span class="badge ${badge}">${label}</span></td>
         <td class="text-center">
@@ -1455,9 +1598,11 @@ function abrirModalProducto() {
   document.getElementById('prod-bodega').value   = '';
   document.getElementById('prod-varietal').value = '';
   document.getElementById('prod-precio').value   = '';
+  document.getElementById('prod-precioCaja').value = '';
   document.getElementById('prod-costo').value    = '';
   document.getElementById('prod-stock').value    = '';
   document.getElementById('prod-stock-min').value = STOCK_MIN_DEFAULT;
+  document.getElementById('prod-proveedor').value = '';
   document.getElementById('modal-prod-title').textContent = 'Nuevo Producto';
   abrirModal('modal-producto');
 }
@@ -1471,9 +1616,11 @@ function editarProducto(id) {
   document.getElementById('prod-bodega').value   = p.bodega||'';
   document.getElementById('prod-varietal').value = p.varietal||'';
   document.getElementById('prod-precio').value   = p.precio||'';
+  document.getElementById('prod-precioCaja').value = p.precioCaja||'';
   document.getElementById('prod-costo').value    = p.costo||'';
   document.getElementById('prod-stock').value    = p.stock||'';
   document.getElementById('prod-stock-min').value = p.stockMin||STOCK_MIN_DEFAULT;
+  document.getElementById('prod-proveedor').value = p.proveedorHabitual||'';
   document.getElementById('modal-prod-title').textContent = 'Editar Producto';
   abrirModal('modal-producto');
 }
@@ -1492,9 +1639,11 @@ async function guardarProducto() {
     bodega:   document.getElementById('prod-bodega').value.trim(),
     varietal: document.getElementById('prod-varietal').value.trim(),
     precio,
+    precioCaja: parseFloat(document.getElementById('prod-precioCaja').value)||0,
     costo:    parseFloat(document.getElementById('prod-costo').value)||0,
     stock,
-    stockMin: parseInt(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT
+    stockMin: parseInt(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT,
+    proveedorHabitual: document.getElementById('prod-proveedor').value.trim()
   };
 
   if (id) {
@@ -1676,22 +1825,74 @@ function renderLineasCompra() {
   if (!cont) return;
   if (!lineasCompra.length) {
     cont.innerHTML = '<p style="font-size:12px; color:var(--text-muted);">Sin productos. Hacé click en "Agregar".</p>';
+    actualizarSubtotalCompra();
     return;
   }
   cont.innerHTML = lineasCompra.map((l,i) => `
-    <div style="display:grid; grid-template-columns:1fr 70px 100px auto; gap:6px; margin-bottom:8px; align-items:end;">
-      <select onchange="lineasCompra[${i}].prodId=this.value" style="font-size:12px;">
+    <div style="display:grid; grid-template-columns:1fr 70px 100px 80px auto; gap:6px; margin-bottom:8px; align-items:end;">
+      <select onchange="lineasCompra[${i}].prodId=this.value; actualizarSubtotalCompra()" style="font-size:12px;">
         <option value="">Seleccionar producto</option>
         ${productos.map(p => `<option value="${p.id}" ${l.prodId===p.id?'selected':''}>${p.nombre}</option>`).join('')}
       </select>
-      <input type="number" placeholder="Cant." value="${l.qty}" min="1" onchange="lineasCompra[${i}].qty=parseInt(this.value)||1" style="font-size:12px;">
-      <input type="number" placeholder="P.Costo" value="${l.precio||''}" onchange="lineasCompra[${i}].precio=parseFloat(this.value)||0" style="font-size:12px;">
+      <input type="number" placeholder="Cant." value="${l.qty}" min="1" onchange="lineasCompra[${i}].qty=parseInt(this.value)||1; actualizarSubtotalCompra()" style="font-size:12px;">
+      <input type="number" placeholder="P.Costo" value="${l.precio||''}" onchange="lineasCompra[${i}].precio=parseFloat(this.value)||0; actualizarSubtotalCompra()" style="font-size:12px;">
+      <span style="font-size:11px; color:var(--text-muted); text-align:right;">${l.precio && l.qty ? formatPeso(l.precio * l.qty) : ''}</span>
       <button class="btn btn-danger btn-sm" onclick="lineasCompra.splice(${i},1); renderLineasCompra()">✕</button>
     </div>`).join('');
+  actualizarSubtotalCompra();
+}
+
+function actualizarSubtotalCompra() {
+  const el = document.getElementById('compra-subtotal-display');
+  if (!el) return;
+  const sub = lineasCompra.reduce((a,l) => a + (l.precio||0)*(l.qty||0), 0);
+  el.textContent = sub > 0 ? `Subtotal: ${formatPeso(sub)}` : '';
+  // Auto-fill total
+  const totalEl = document.getElementById('c-total');
+  if (totalEl && !totalEl.value && sub > 0) totalEl.value = sub;
+}
+
+function autocompletarProveedor() {
+  const dl = document.getElementById('proveedores-list');
+  if (!dl) return;
+  const provs = [...new Set(compras.map(c => c.proveedor).filter(Boolean))];
+  dl.innerHTML = provs.map(p => `<option value="${p}">`).join('');
+  // También llenar datalist de remitos
+  const rl = document.getElementById('remitos-list');
+  if (rl) {
+    const rems = compras.filter(c => c.remito).map(c => c.remito);
+    rl.innerHTML = [...new Set(rems)].map(r => `<option value="${r}">`).join('');
+  }
+}
+
+function buscarPorRemito() {
+  const nro = document.getElementById('c-remito').value.trim();
+  if (!nro) return;
+  const encontrado = compras.find(c => c.remito && c.remito.toLowerCase() === nro.toLowerCase());
+  if (!encontrado) return; // No encontró, no hacer nada
+  
+  // Cargar toda la info del remito encontrado
+  document.getElementById('c-proveedor').value = encontrado.proveedor || '';
+  document.getElementById('c-total').value = '';
+  lineasCompra = (encontrado.items||[]).map(i => ({prodId:i.prodId, qty:i.qty, precio:i.precio}));
+  renderLineasCompra();
+  toast(`📋 Remito ${nro} encontrado — ${encontrado.proveedor} — ${lineasCompra.length} productos cargados`, 'success');
+}
+
+function cargarUltimoRemito() {
+  const prov = document.getElementById('c-proveedor').value.trim().toLowerCase();
+  if (!prov) { toast('Escribí primero el proveedor','error'); return; }
+  const ultimo = compras.find(c => c.proveedor && c.proveedor.toLowerCase() === prov);
+  if (!ultimo) { toast('No hay compras anteriores de este proveedor','error'); return; }
+  lineasCompra = (ultimo.items||[]).map(i => ({prodId:i.prodId, qty:i.qty, precio:i.precio}));
+  if (ultimo.remito) document.getElementById('c-remito').value = ultimo.remito;
+  renderLineasCompra();
+  toast(`📋 Cargados ${lineasCompra.length} productos del último remito`);
 }
 
 async function registrarCompra() {
   const proveedor = document.getElementById('c-proveedor').value.trim();
+  const remito    = document.getElementById('c-remito')?.value.trim()||'';
   const fecha     = document.getElementById('c-fecha').value || new Date().toISOString().slice(0,10);
   const total     = parseFloat(document.getElementById('c-total').value)||0;
   const pago      = document.getElementById('c-pago').value;
@@ -1702,11 +1903,14 @@ async function registrarCompra() {
   const items = lineasCompra.filter(l => l.prodId);
   if (!items.length) { toast('Seleccioná productos en las líneas','error'); return; }
 
+  // Auto-calculate total if not filled
+  const calcTotal = total || items.reduce((a,l) => a + (l.precio||0)*(l.qty||0), 0);
+
   const compra = {
-    proveedor, fecha, total, pago, notas,
+    proveedor, remito, fecha, total: calcTotal, pago, notas,
     items: items.map(l => {
       const p = productos.find(x => x.id===l.prodId);
-      return {prodId:l.prodId, nombre:p?.nombre||'', qty:l.qty, precio:l.precio};
+      return {prodId:l.prodId, nombre:p?.nombre||'', qty:l.qty, precio:l.precio, subtotal:(l.precio||0)*(l.qty||0)};
     })
   };
 
@@ -1714,19 +1918,20 @@ async function registrarCompra() {
   compra.id = id;
   compras.unshift(compra);
 
-  // Actualizar stock
+  // Actualizar stock y precio de compra
   for (const item of items) {
     const prod = productos.find(p => p.id===item.prodId);
     if (prod) {
       prod.stock = (prod.stock||0) + item.qty;
       if (item.precio) prod.costo = item.precio;
-      await updateDoc('productos', prod.id, {stock:prod.stock, costo:prod.costo||0});
+      if (proveedor) prod.proveedorHabitual = proveedor;
+      await updateDoc('productos', prod.id, {stock:prod.stock, costo:prod.costo||0, proveedorHabitual: prod.proveedorHabitual||''});
     }
   }
 
   // Egreso de caja
-  if (total > 0) {
-    const mov = { fecha:new Date().toISOString(), concepto:`Compra a ${proveedor}`, monto:total, tipo:'egreso', medio:pago };
+  if (calcTotal > 0 && pago !== 'credito-proveedor') {
+    const mov = { fecha:new Date().toISOString(), concepto:`Compra a ${proveedor}${remito?' ('+remito+')':''}`, monto:calcTotal, tipo:'egreso', medio:pago };
     const mid = await saveDoc('movimientos', mov);
     mov.id = mid;
     movimientos.unshift(mov);
@@ -1736,24 +1941,32 @@ async function registrarCompra() {
   lineasCompra = [];
   renderLineasCompra();
   document.getElementById('c-proveedor').value = '';
+  document.getElementById('c-remito').value    = '';
   document.getElementById('c-total').value     = '';
   document.getElementById('c-notas').value     = '';
   cargarCompras();
   renderStock();
+  renderCaja();
   toast('✅ Compra registrada y stock actualizado', 'success');
 }
 
 function cargarCompras() {
   renderLineasCompra();
+  autocompletarProveedor();
   const el = document.getElementById('lista-compras');
   if (!el) return;
   if (!compras.length) {
     el.innerHTML = '<p style="font-size:13px; color:var(--text-muted);">No hay compras registradas.</p>';
     return;
   }
-  el.innerHTML = '<ul class="mini-list">' + compras.slice(0,8).map(c => `
+  el.innerHTML = '<ul class="mini-list">' + compras.slice(0,10).map(c => `
     <li>
-      <span><strong>${c.proveedor}</strong> <span style="font-size:11px; color:var(--text-muted)">${formatFechaCorta(c.fecha)}</span></span>
+      <span>
+        <strong>${c.proveedor}</strong>
+        ${c.remito?`<span class="badge badge-wine" style="margin-left:4px;">${c.remito}</span>`:''}
+        <span style="font-size:11px; color:var(--text-muted)">${formatFechaCorta(c.fecha)}</span>
+        <br><span style="font-size:11px; color:var(--text-muted);">${(c.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ').slice(0,60)}</span>
+      </span>
       <span style="font-weight:600;">${formatPeso(c.total)}</span>
     </li>`).join('') + '</ul>';
 }
@@ -1774,10 +1987,11 @@ function renderHistorial() {
   });
 
   const total = filtradas.reduce((a,v) => a+(v.total||0), 0);
-  document.getElementById('h-resumen').textContent = `${filtradas.length} ventas · Total: ${formatPeso(total)}`;
+  const totalGanancia = filtradas.reduce((a,v) => a+(v.ganancia||0), 0);
+  document.getElementById('h-resumen').textContent = `${filtradas.length} ventas · Total: ${formatPeso(total)} · Ganancia: ${formatPeso(totalGanancia)}`;
 
   if (!filtradas.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px; color:var(--text-muted);">No hay ventas en el período seleccionado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px; color:var(--text-muted);">No hay ventas en el período seleccionado.</td></tr>';
     return;
   }
 
@@ -1788,6 +2002,7 @@ function renderHistorial() {
       <td style="font-size:12px; color:var(--text-muted);">${(v.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</td>
       <td><span class="badge badge-wine">${v.pago||'—'}</span></td>
       <td class="text-right"><strong>${formatPeso(v.total||0)}</strong></td>
+      <td class="text-right" style="color:var(--success);">${v.ganancia ? formatPeso(v.ganancia) : '—'}</td>
       <td class="text-center" style="white-space:nowrap;">
         <button class="btn btn-outline btn-sm" onclick='mostrarComprobanteHistorial(${JSON.stringify(v).replace(/'/g,"&#39;")})'>Ver</button>
         <button class="btn btn-outline btn-sm" onclick='generarRemito(${JSON.stringify(v).replace(/'/g,"&#39;")})' style="margin-left:3px;">📄</button>
@@ -1963,7 +2178,7 @@ async function eliminarVenta(id) {
   if (!venta) { toast('Venta no encontrada', 'error'); return; }
 
   const itemsText = (venta.items||[]).map(i => `${i.qty}x ${i.nombre}`).join(', ');
-  if (!confirm(`¿Eliminar esta venta?\n\nCliente: ${venta.cliente||'Sin nombre'}\nTotal: ${formatPeso(venta.total||0)}\nProductos: ${itemsText}\n\n⚠ Se restaurará el stock de cada producto.`)) return;
+  if (!confirm(`¿Eliminar esta venta?\n\nCliente: ${venta.cliente||'Sin nombre'}\nTotal: ${formatPeso(venta.total||0)}\nProductos: ${itemsText}\n\n⚠ Se restaurará el stock y se ajustará la caja.`)) return;
 
   // 1. Restaurar stock de cada producto
   for (const item of (venta.items||[])) {
@@ -1976,50 +2191,60 @@ async function eliminarVenta(id) {
 
   // 2. Revertir cuenta corriente si aplica
   if (venta.clienteId) {
-    // Restar el monto total del saldo
     await agregarMovimientoCC(
       venta.clienteId, 'anulacion', venta.total,
       new Date().toISOString(), `Anulación venta #${id}`
     );
   }
 
-    // 2.5 💰 Ajustar caja (MUY IMPORTANTE)
-  try {
-    const cajaRef = db.collection("config").doc("caja");
-    const cajaSnap = await cajaRef.get();
-
-    if (cajaSnap.exists) {
-      const saldoActual = cajaSnap.data().saldo || 0;
-
-      await cajaRef.update({
-        saldo: saldoActual - (venta.total || 0)
-      });
+  // 3. 💰 Ajustar caja — buscar y eliminar el movimiento de ingreso asociado
+  // También crear un contra-movimiento para que quede registrado
+  if (venta.pago !== 'cuenta-corriente') {
+    // Buscar el movimiento de ingreso correspondiente
+    const movIdx = movimientos.findIndex(m => m.ventaId === id || 
+      (m.tipo === 'ingreso' && m.concepto && m.concepto.includes('Venta') && Math.abs((m.monto||0) - (venta.total||0)) < 1));
+    
+    if (movIdx >= 0) {
+      // Eliminar el movimiento original
+      const movOrig = movimientos[movIdx];
+      await deleteDoc('movimientos', movOrig.id);
+      movimientos.splice(movIdx, 1);
     } else {
-      console.warn("No existe documento de caja");
+      // Si no encontramos el movimiento original, crear contra-movimiento
+      const contraMovimiento = {
+        fecha: new Date().toISOString(),
+        concepto: `Anulación venta #${id} - ${venta.cliente||'cliente'}`,
+        monto: venta.total || 0,
+        tipo: 'egreso',
+        medio: venta.pago || 'efectivo',
+        ventaId: id
+      };
+      const mid = await saveDoc('movimientos', contraMovimiento);
+      contraMovimiento.id = mid;
+      movimientos.unshift(contraMovimiento);
     }
-  } catch (e) {
-    console.error("Error ajustando caja:", e);
   }
 
-  // 3. Eliminar en Firestore
+  // 4. Eliminar en Firestore
   await deleteDoc('ventas', id);
 
-  // 4. Quitar del estado local
+  // 5. Quitar del estado local
   ventas = ventas.filter(v => v.id !== id);
   guardarLocal();
 
-  // 5. Refrescar UI
+  // 6. Refrescar UI
   renderHistorial();
   renderStock();
   renderVentasGrid();
   renderDashboard();
+  renderCaja();
   
   // Si hay cliente seleccionado, refrescar su panel
   if (clienteSeleccionadoId) {
     await verDetalleCliente(clienteSeleccionadoId);
   }
   
-  toast('🗑 Venta eliminada, stock restaurado y saldo actualizado', 'success');
+  toast('🗑 Venta eliminada, stock restaurado y caja ajustada', 'success');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2452,7 +2677,7 @@ async function cargarTodo() {
 async function cargarRemitoSimple(remito) {
   try {
     // 1. Guardar remito en Firebase
-    await addDoc('remitos', {
+    await saveDoc('remitos', {
       ...remito,
       fecha: new Date().toISOString()
     });
