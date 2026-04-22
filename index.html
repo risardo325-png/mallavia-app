@@ -328,6 +328,7 @@
       <div class="sub">Sistema de Gestión</div>
     </div>
     <div class="alert alert-info">⚡ Primera vez usando la app — necesitás configurar tu base de datos gratuita en Firebase.</div>
+    <div class="alert alert-warning" style="font-size:12px;">⚠️ <strong>Importante:</strong> Esta app debe abrirse desde un servidor web (<code>localhost</code> o dominio), no desde <code>file://</code>. Si la estás abriendo directamente desde el archivo, Firebase no va a conectar.</div>
     <div class="card">
       <div class="card-title">🔧 Configuración inicial (5 minutos)</div>
       <ul class="step-list">
@@ -488,6 +489,10 @@
               <option value="cuenta-corriente">📒 Cuenta Corriente</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>Fecha de la venta</label>
+            <input type="date" id="venta-fecha" title="Podés cambiar la fecha para cargar ventas anteriores">
+          </div>
           <div class="carrito-total">
             <span>Total:</span>
             <span id="carrito-total">$0</span>
@@ -546,6 +551,8 @@
     <div class="section-title">🧾 Registrar Compra</div>
     <div class="section-sub">Cargá una compra a proveedores para actualizar el stock.</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+
+      <!-- Formulario nueva compra -->
       <div class="card">
         <div class="card-title">Nueva compra / Remito</div>
         <div class="form-row">
@@ -554,11 +561,17 @@
             <input type="text" id="c-proveedor" placeholder="Ej: Peñaflor, Chandon..." list="proveedores-list" oninput="autocompletarProveedor()">
             <datalist id="proveedores-list"></datalist>
           </div>
-          <div class="form-group"><label>Nro. Remito</label><input type="text" id="c-remito" placeholder="Ej: R-001234" list="remitos-list" onchange="buscarPorRemito()"><datalist id="remitos-list"></datalist></div>
+          <div class="form-group">
+            <label>Nro. Remito</label>
+            <input type="text" id="c-remito" placeholder="Ej: R-001234">
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group"><label>Fecha</label><input type="date" id="c-fecha"></div>
-          <div class="form-group" style="display:flex; align-items:flex-end;"><button class="btn btn-outline btn-sm" onclick="cargarUltimoRemito()" style="width:100%;">📋 Cargar último remito</button></div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('lista-remitos-compras').scrollIntoView({behavior:'smooth'})" style="width:100%;">📋 Ver remitos guardados ↓</button>
+          </div>
         </div>
         <div id="compra-items">
           <div style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Productos comprados</div>
@@ -583,10 +596,25 @@
         <div class="form-group"><label>Notas (opcional)</label><textarea id="c-notas" rows="2" placeholder="Observaciones..."></textarea></div>
         <button class="btn btn-gold btn-lg" style="width:100%; justify-content:center;" onclick="registrarCompra()">✅ Registrar compra y actualizar stock</button>
       </div>
-      <div class="card">
-        <div class="card-title">📋 Últimas compras</div>
-        <div id="lista-compras"><div class="loader"><div class="spinner"></div></div></div>
+
+      <!-- Panel de remitos guardados -->
+      <div class="card" id="lista-remitos-compras">
+        <div class="card-title" style="justify-content:space-between;">
+          <span>📦 Remitos cargados</span>
+          <span id="remitos-count-badge" style="font-size:12px; color:var(--text-muted); font-weight:400;"></span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Todos los remitos registrados. Podés eliminar uno individualmente — se restará el stock correspondiente.</div>
+
+        <!-- Filtro rápido por proveedor -->
+        <div style="margin-bottom:12px;">
+          <input type="text" id="remitos-search" placeholder="🔍 Filtrar por proveedor o número..." oninput="renderRemitosCompras()" style="font-size:13px; padding:8px 10px;">
+        </div>
+
+        <div id="lista-remitos-body">
+          <div class="loader"><div class="spinner"></div>Cargando remitos...</div>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -604,6 +632,9 @@
         <option value="debito">Débito</option>
         <option value="credito">Crédito</option>
         <option value="cuenta-corriente">Cuenta Corriente</option>
+      </select>
+      <select id="h-producto" onchange="renderHistorial()" style="min-width:180px; max-width:240px;">
+        <option value="">Todos los productos</option>
       </select>
       <button class="btn btn-outline" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
     </div>
@@ -1014,16 +1045,17 @@ window.onload = async function() {
 };
 
 // Separamos la lógica de la app para poder llamarla post-login
+// ⚠ Esta función se ejecuta UNA SOLA VEZ. No se auto-llama ni tiene referencias circulares.
 async function iniciarApp() {
   setFechaHoy();
 
   const config = getFirebaseConfig();
 
   if (!config || !config.apiKey || !config.projectId) {
-    // Sin configuración Firebase: mostrar setup
     document.getElementById('setup-overlay').style.display = 'block';
     cargarDesdeLocal();
     if (productos.length === 0) cargarCatalogoEnMemoria();
+    await _cargarClientesLocal();
     renderAll();
     return;
   }
@@ -1031,24 +1063,23 @@ async function iniciarApp() {
   const ok = initFirebase(config);
 
   if (ok) {
-    modoLocal = false; // ✅ FIX #4: Firebase activo → NO usar localStorage como fuente de verdad
+    modoLocal = false;
     try {
-      await cargarTodo();
-      // ✅ Solo precargar catálogo si Firebase está vacío
-      if (productos.length === 0) {
-        await precargarCatalogo();
-      }
+      await cargarTodo(); // activa onSnapshot para todas las colecciones
+      if (productos.length === 0) await precargarCatalogo();
     } catch(e) {
       console.error('[Startup] Error cargando desde Firebase:', e);
       modoLocal = true;
       setDBStatus(false);
       cargarDesdeLocal();
       if (productos.length === 0) cargarCatalogoEnMemoria();
+      await _cargarClientesLocal();
     }
   } else {
     modoLocal = true;
     cargarDesdeLocal();
     if (productos.length === 0) cargarCatalogoEnMemoria();
+    await _cargarClientesLocal();
   }
 
   renderAll();
@@ -1112,6 +1143,9 @@ function setFechaHoy() {
   const hHasta = document.getElementById('h-hasta');
   if (hDesde) hDesde.value = desde.toISOString().slice(0,10);
   if (hHasta) hHasta.value = hoy.toISOString().slice(0,10);
+  // Fecha default en venta rápida
+  const vFecha = document.getElementById('venta-fecha');
+  if (vFecha) vFecha.value = hoy.toISOString().slice(0,10);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1201,7 +1235,8 @@ async function cargarTodo() {
   // ── REMITOS ──
   const u6 = db.collection('remitos').orderBy('fecha','desc').limit(100).onSnapshot(snapshot => {
     remitos = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
-    renderRemitos();
+    renderRemitos();           // tab Remitos
+    renderRemitosCompras();    // panel en Compras
     console.log('[RT] remitos actualizados:', remitos.length);
   }, err => { console.error('[RT] remitos error:', err); });
 
@@ -1385,8 +1420,8 @@ function showPage(p) {
   if (p === 'stock')     renderStock();
   if (p === 'historial') renderHistorial();
   if (p === 'remitos')   renderRemitos();
+  if (p === 'compras')   { cargarCompras(); renderRemitosCompras(); if (!lineasCompra.length) addLineaCompra(); }
   if (p === 'caja')      renderCaja();
-  if (p === 'compras')   { cargarCompras(); if (!lineasCompra.length) addLineaCompra(); }
   if (p === 'ventas')    renderVentasGrid();
   if (p === 'clientes')  renderClientes();
 }
@@ -1458,11 +1493,15 @@ function renderDashboard() {
     if (!sorted.length) {
       topEl.innerHTML = '<p style="font-size:13px; color:var(--text-muted);">Sin ventas este mes</p>';
     } else {
-      topEl.innerHTML = '<ul class="mini-list">' + sorted.map(([nombre, qty], i) => `
-        <li>
+      topEl.innerHTML = '<ul class="mini-list">' + sorted.map(([nombre, qty], i) => {
+        // Buscar prodId para poder filtrar en historial
+        const prod = productos.find(p => (p.nombre||'').toLowerCase() === nombre.toLowerCase());
+        const clickAttr = prod ? `onclick="showPage('historial'); filtrarVentasPorProducto('${prod.id}')" style="cursor:pointer;" title="Ver ventas de ${nombre}"` : '';
+        return `<li ${clickAttr}>
           <span><span style="color:var(--gold); font-weight:600; margin-right:6px;">#${i+1}</span>${nombre}</span>
           <span class="badge badge-gold">${qty} vendidos</span>
-        </li>`).join('') + '</ul>';
+        </li>`;
+      }).join('') + '</ul>';
     }
   }
 }
@@ -1569,18 +1608,42 @@ function renderCarrito() {
 
   const total = carrito.reduce((a,c) => a + c.precio*c.qty, 0);
   body.innerHTML = `<div class="carrito-items">${carrito.map((c,i) => `
-    <div class="carrito-item">
-      <span class="carrito-item-name">${c.nombre}</span>
+    <div class="carrito-item" style="flex-wrap:wrap; gap:4px;">
+      <span class="carrito-item-name" style="width:100%;">${c.nombre}</span>
       <div class="qty-ctrl">
         <button class="qty-btn" onclick="cambiarQty(${i},-1)">−</button>
         <div class="qty-val">${c.qty}</div>
         <button class="qty-btn" onclick="cambiarQty(${i},1)">+</button>
       </div>
+      <input
+        type="number"
+        value="${c.precio}"
+        min="0"
+        style="width:80px; font-size:12px; padding:2px 6px; border:1px solid var(--border); border-radius:4px; text-align:right;"
+        title="Editá el precio"
+        onchange="editarPrecioCarrito(${i}, this.value)"
+        oninput="editarPrecioCarrito(${i}, this.value)"
+      >
       <span class="carrito-item-total">${formatPeso(c.precio*c.qty)}</span>
     </div>`).join('')}
   </div>`;
   document.getElementById('carrito-total').textContent = formatPeso(total);
   if (btn) btn.disabled = false;
+}
+
+// MEJORA 2: editar precio por item en carrito
+function editarPrecioCarrito(idx, valor) {
+  const nuevoPrecio = parseFloat(valor) || 0;
+  if (nuevoPrecio < 0) return;
+  carrito[idx].precio = nuevoPrecio;
+  // Actualizar solo el total y el subtotal del item sin re-renderizar todo
+  const items = document.querySelectorAll('.carrito-item');
+  if (items[idx]) {
+    const totalSpan = items[idx].querySelector('.carrito-item-total');
+    if (totalSpan) totalSpan.textContent = formatPeso(nuevoPrecio * carrito[idx].qty);
+  }
+  const total = carrito.reduce((a,c) => a + c.precio*c.qty, 0);
+  document.getElementById('carrito-total').textContent = formatPeso(total);
 }
 
 function cambiarQty(i, delta) {
@@ -1599,7 +1662,12 @@ async function procesarVenta() {
   const pago    = document.getElementById('venta-pago').value;
   const total   = carrito.reduce((a,c) => a + c.precio*c.qty, 0);
   const gananciaTotal = carrito.reduce((a,c) => a + (c.precio - (c.costoUnit||0))*c.qty, 0);
-  const fecha   = new Date().toISOString();
+
+  // MEJORA 1: usar fecha del input, con fallback a hoy
+  const fechaInput = document.getElementById('venta-fecha')?.value;
+  const fecha = fechaInput
+    ? new Date(fechaInput + 'T12:00:00').toISOString()
+    : new Date().toISOString();
 
   const venta = {
     fecha, cliente, pago, total, ganancia: gananciaTotal,
@@ -2027,16 +2095,6 @@ function buscarPorRemito() {
   toast(`📋 Remito ${nro} encontrado — ${encontrado.proveedor} — ${lineasCompra.length} productos cargados`, 'success');
 }
 
-function cargarUltimoRemito() {
-  const prov = document.getElementById('c-proveedor').value.trim().toLowerCase();
-  if (!prov) { toast('Escribí primero el proveedor','error'); return; }
-  const ultimo = compras.find(c => c.proveedor && c.proveedor.toLowerCase() === prov);
-  if (!ultimo) { toast('No hay compras anteriores de este proveedor','error'); return; }
-  lineasCompra = (ultimo.items||[]).map(i => ({prodId:i.prodId, qty:i.qty, precio:i.precio}));
-  if (ultimo.remito) document.getElementById('c-remito').value = ultimo.remito;
-  renderLineasCompra();
-  toast(`📋 Cargados ${lineasCompra.length} productos del último remito`);
-}
 
 async function registrarCompra() {
   const proveedor = document.getElementById('c-proveedor').value.trim();
@@ -2116,42 +2174,151 @@ async function registrarCompra() {
 function cargarCompras() {
   renderLineasCompra();
   autocompletarProveedor();
-  const el = document.getElementById('lista-compras');
+  renderRemitosCompras(); // ← reemplaza el viejo lista-compras
+}
+
+// ══════════════════════════════════════════════════════════
+// LISTADO DE REMITOS EN PÁGINA COMPRAS
+// ══════════════════════════════════════════════════════════
+function renderRemitosCompras() {
+  const el    = document.getElementById('lista-remitos-body');
+  const badge = document.getElementById('remitos-count-badge');
   if (!el) return;
-  if (!compras.length) {
-    el.innerHTML = '<p style="font-size:13px; color:var(--text-muted);">No hay compras registradas.</p>';
+
+  const q = (document.getElementById('remitos-search')?.value || '').toLowerCase();
+
+  // Usar el array global `remitos` (sincronizado via onSnapshot)
+  // Fallback: armar desde `compras` si remitos aún no cargó
+  const fuente = remitos.length > 0 ? remitos : compras.map(c => ({
+    id: c.id,
+    proveedor: c.proveedor,
+    remito: c.remito,
+    fecha: c.fecha,
+    items: c.items,
+    notas: c.notas
+  }));
+
+  const filtrados = fuente.filter(r => {
+    const prov = (r.proveedor || '').toLowerCase();
+    const nro  = (r.remito   || '').toLowerCase();
+    return !q || prov.includes(q) || nro.includes(q);
+  });
+
+  if (badge) badge.textContent = `${fuente.length} remito${fuente.length !== 1 ? 's' : ''}`;
+
+  if (!filtrados.length) {
+    el.innerHTML = `<p style="font-size:13px; color:var(--text-muted); padding:8px 0;">
+      ${q ? 'Sin resultados para "' + q + '"' : 'Todavía no hay remitos. Registrá tu primera compra.'}
+    </p>`;
     return;
   }
-  el.innerHTML = '<ul class="mini-list">' + compras.slice(0,10).map(c => `
-    <li>
-      <span>
-        <strong>${c.proveedor}</strong>
-        ${c.remito?`<span class="badge badge-wine" style="margin-left:4px;">${c.remito}</span>`:''}
-        <span style="font-size:11px; color:var(--text-muted)">${formatFechaCorta(c.fecha)}</span>
-        <br><span style="font-size:11px; color:var(--text-muted);">${(c.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ').slice(0,60)}</span>
-      </span>
-      <span style="font-weight:600;">${formatPeso(c.total)}</span>
-    </li>`).join('') + '</ul>';
+
+  el.innerHTML = filtrados.map(r => {
+    const items     = (r.items || []);
+    const total     = items.reduce((a, i) => a + (parseFloat(i.precio)||0) * (parseFloat(i.qty)||0), 0);
+    const itemsText = items.map(i => `<span style="display:inline-block; background:var(--cream-dark); border-radius:4px; padding:1px 6px; margin:1px; font-size:11px;">${i.qty}× ${i.nombre || '?'}</span>`).join('');
+    const nroBadge  = r.remito
+      ? `<span class="badge badge-wine" style="margin-left:6px;">${r.remito}</span>`
+      : '';
+
+    return `
+    <div style="border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:10px; background:var(--cream);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:14px; font-weight:600; color:var(--wine-dark);">
+            ${r.proveedor || '—'}${nroBadge}
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+            📅 ${formatFechaCorta(r.fecha)}
+            ${total > 0 ? ` · <strong style="color:var(--wine-dark);">${formatPeso(total)}</strong>` : ''}
+          </div>
+          <div style="margin-top:6px; line-height:1.8;">${itemsText || '<span style="font-size:11px; color:var(--text-muted);">Sin productos</span>'}</div>
+          ${r.notas ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-style:italic;">📝 ${r.notas}</div>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
+          <button class="btn btn-outline btn-sm" onclick="replicarRemito('${r.id}')" title="Cargar este remito como base para uno nuevo">♻ Reusar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarRemito('${r.id}')">🗑 Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Reusar un remito guardado: carga sus items en el formulario de nueva compra
+function replicarRemito(id) {
+  const fuente = remitos.length > 0 ? remitos : compras;
+  const r = fuente.find(x => x.id === id);
+  if (!r) { toast('Remito no encontrado', 'error'); return; }
+
+  document.getElementById('c-proveedor').value = r.proveedor || '';
+  document.getElementById('c-remito').value    = ''; // nro nuevo
+  document.getElementById('c-notas').value     = r.notas || '';
+  document.getElementById('c-total').value     = '';
+
+  lineasCompra = (r.items || []).map(i => ({ prodId: i.prodId, qty: i.qty, precio: i.precio || 0 }));
+  renderLineasCompra();
+
+  // Scroll al formulario
+  document.querySelector('#page-compras .card').scrollIntoView({ behavior: 'smooth' });
+  toast(`📋 Remito de ${r.proveedor} cargado — editá lo que necesites y registrá`, 'success');
 }
 
 // ══════════════════════════════════════════════════════════
 // HISTORIAL
 // ══════════════════════════════════════════════════════════
+function _poblarFiltroProductos() {
+  const sel = document.getElementById('h-producto');
+  if (!sel) return;
+  const actual = sel.value;
+  // Recopilar todos los productos únicos que aparecen en ventas
+  const mapa = {};
+  ventas.forEach(v => (v.items||[]).forEach(i => {
+    if (i.prodId && i.nombre) mapa[i.prodId] = i.nombre;
+  }));
+  const opciones = Object.entries(mapa).sort((a,b) => a[1].localeCompare(b[1]));
+  sel.innerHTML = '<option value="">Todos los productos</option>' +
+    opciones.map(([id, nombre]) => `<option value="${id}" ${id===actual?'selected':''}>${nombre}</option>`).join('');
+}
+
+// MEJORA 3: filtrar ventas por producto
+function filtrarVentasPorProducto(prodId) {
+  const sel = document.getElementById('h-producto');
+  if (sel) sel.value = prodId;
+  renderHistorial();
+}
+
 function renderHistorial() {
-  const desde = document.getElementById('h-desde')?.value||'';
-  const hasta = document.getElementById('h-hasta')?.value||'';
-  const pago  = document.getElementById('h-pago')?.value||'';
-  const tbody = document.getElementById('tbody-historial');
+  const desde   = document.getElementById('h-desde')?.value||'';
+  const hasta   = document.getElementById('h-hasta')?.value||'';
+  const pago    = document.getElementById('h-pago')?.value||'';
+  const prodId  = document.getElementById('h-producto')?.value||'';
+  const tbody   = document.getElementById('tbody-historial');
   if (!tbody) return;
+
+  _poblarFiltroProductos();
 
   let filtradas = ventas.filter(v => {
     const fecha = (v.fecha||'').slice(0,10);
-    return (!desde || fecha>=desde) && (!hasta || fecha<=hasta) && (!pago || v.pago===pago);
+    const pasaFecha = (!desde || fecha>=desde) && (!hasta || fecha<=hasta);
+    const pasaPago  = !pago  || v.pago===pago;
+    const pasaProd  = !prodId || (v.items||[]).some(i => i.prodId===prodId);
+    return pasaFecha && pasaPago && pasaProd;
   });
 
   const total = filtradas.reduce((a,v) => a+(v.total||0), 0);
   const totalGanancia = filtradas.reduce((a,v) => a+(v.ganancia||0), 0);
-  document.getElementById('h-resumen').textContent = `${filtradas.length} ventas · Total: ${formatPeso(total)} · Ganancia: ${formatPeso(totalGanancia)}`;
+
+  // Si hay filtro por producto, mostrar cuántas unidades se vendieron
+  let resumenProd = '';
+  if (prodId) {
+    const uds = filtradas.reduce((a,v) =>
+      a + (v.items||[]).filter(i=>i.prodId===prodId).reduce((b,i)=>b+i.qty,0), 0);
+    const nombreProd = document.getElementById('h-producto')?.options[document.getElementById('h-producto').selectedIndex]?.text || '';
+    resumenProd = ` · <strong>${nombreProd}</strong>: ${uds} unidades vendidas`;
+  }
+
+  document.getElementById('h-resumen').innerHTML =
+    `${filtradas.length} ventas · Total: ${formatPeso(total)} · Ganancia: ${formatPeso(totalGanancia)}${resumenProd}`;
 
   if (!filtradas.length) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px; color:var(--text-muted);">No hay ventas en el período seleccionado.</td></tr>';
@@ -2183,6 +2350,8 @@ function limpiarFiltrosHistorial() {
   document.getElementById('h-desde').value = desde.toISOString().slice(0,10);
   document.getElementById('h-hasta').value = hoy.toISOString().slice(0,10);
   document.getElementById('h-pago').value  = '';
+  const hProd = document.getElementById('h-producto');
+  if (hProd) hProd.value = '';
   renderHistorial();
 }
 
@@ -2827,21 +2996,14 @@ function generarBoleta(venta, tipo = 'C') {
 }
 
 // ══════════════════════════════════════════════════════════
-// ══ PATCH: iniciarApp extendida — cargar CCs en modo local ══
+// Clientes/CC en modo local — llamado explícito post-init
 // ══════════════════════════════════════════════════════════
-// En modo Firebase los clientes ya se sincronizan via onSnapshot (dentro de cargarTodo).
-// En modo local, los cargamos manualmente después de cargarTodo.
-const _iniciarAppOriginal = iniciarApp;
-async function iniciarApp() {
-  await _iniciarAppOriginal();
-  // Post-init en modo local: cargar clientes y CCs
-  if (modoLocal || !db) {
-    await cargarClientes();
-    for (const cli of clientes) {
-      await obtenerCC(cli.id);
-    }
-    renderClientes();
+async function _cargarClientesLocal() {
+  await cargarClientes();
+  for (const cli of clientes) {
+    await obtenerCC(cli.id);
   }
+  renderClientes();
 }
 // ═══════════════════════════════════════════════════
 // FIX #1 — REMITOS: usar addDoc (ID único por remito)
@@ -2915,9 +3077,9 @@ async function eliminarRemito(id) {
   guardarLocal();
   renderStock();
   renderVentasGrid();
+  renderRemitosCompras(); // refrescar panel en Compras
   toast('🗑 Remito eliminado y stock ajustado', 'success');
 }
 </script>
 </body>
 </html>
-
