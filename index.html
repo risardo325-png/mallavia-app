@@ -380,6 +380,7 @@
   <button onclick="showPage('historial')" data-page="historial"><span class="nav-icon">📋</span> Historial</button>
   <button onclick="showPage('caja')" data-page="caja"><span class="nav-icon">💰</span> Caja</button>
   <button onclick="showPage('clientes')" data-page="clientes"><span class="nav-icon">👥</span> Clientes</button>
+  <button onclick="showPage('remitos')" data-page="remitos"><span class="nav-icon">📦</span> Remitos</button>
 </nav>
 
 <!-- ══ MAIN ══ -->
@@ -719,6 +720,29 @@
     </div>
   </div>
 
+  <!-- REMITOS -->
+  <div class="page" id="page-remitos">
+    <div class="section-title">📦 Remitos de Compra</div>
+    <div class="section-sub">Historial de remitos cargados a proveedores. Cada remito es independiente y puede eliminarse individualmente.</div>
+    <div class="card">
+      <div id="remitos-alert" style="margin-bottom:12px;"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Proveedor</th>
+              <th>Productos</th>
+              <th class="text-right">Total</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-remitos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- MODAL PRODUCTO -->
@@ -910,6 +934,7 @@ let ventas      = [];
 let compras     = [];
 let movimientos = [];
 let carrito     = [];
+let remitos     = []; // ✅ Estado en memoria para remitos en tiempo real
 let modoLocal   = false;
 
 const STOCK_MIN_DEFAULT = 3;
@@ -1006,6 +1031,7 @@ async function iniciarApp() {
   const ok = initFirebase(config);
 
   if (ok) {
+    modoLocal = false; // ✅ FIX #4: Firebase activo → NO usar localStorage como fuente de verdad
     try {
       await cargarTodo();
       // ✅ Solo precargar catálogo si Firebase está vacío
@@ -1038,6 +1064,40 @@ function renderAll() {
   renderCaja();
   cargarCompras();
   renderClientes();
+  renderRemitos();
+}
+
+// ══════════════════════════════════════════════════════════
+// REMITOS — render tabla con todos los remitos guardados
+// ══════════════════════════════════════════════════════════
+function renderRemitos() {
+  const tbody = document.getElementById('tbody-remitos');
+  const alertEl = document.getElementById('remitos-alert');
+  if (!tbody) return;
+
+  if (!remitos.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted);">No hay remitos registrados. Los remitos se crean al registrar compras.</td></tr>';
+    if (alertEl) alertEl.innerHTML = '';
+    return;
+  }
+
+  if (alertEl) {
+    alertEl.innerHTML = `<div class="alert alert-info">📦 ${remitos.length} remito${remitos.length > 1 ? 's' : ''} registrado${remitos.length > 1 ? 's' : ''}. El stock se ajusta automáticamente al eliminar.</div>`;
+  }
+
+  tbody.innerHTML = remitos.map(r => {
+    const itemsText = (r.items || []).map(i => `${i.qty}x ${i.nombre || i.prodId || '?'}`).join(', ');
+    const total = (r.items || []).reduce((a, i) => a + (parseFloat(i.precio)||0) * (parseFloat(i.qty)||0), 0);
+    return `<tr>
+      <td>${formatFechaCorta(r.fecha)}</td>
+      <td><strong>${r.proveedor || '—'}</strong>${r.remito ? `<br><span class="badge badge-wine" style="margin-top:2px;">${r.remito}</span>` : ''}</td>
+      <td style="font-size:12px; color:var(--text-muted); max-width:280px;">${itemsText.slice(0,100)}${itemsText.length>100?'…':''}</td>
+      <td class="text-right"><strong>${total > 0 ? formatPeso(total) : '—'}</strong></td>
+      <td class="text-center">
+        <button class="btn btn-danger btn-sm" onclick="eliminarRemito('${r.id}')">🗑 Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function setFechaHoy() {
@@ -1057,19 +1117,99 @@ function setFechaHoy() {
 // ══════════════════════════════════════════════════════════
 // ✅ FIX #5: FIREBASE CRUD — manejo de errores robusto
 // ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// ✅ FIX #4 — TIEMPO REAL: onSnapshot reemplaza cargarTodo
+//    Cada colección tiene su listener independiente.
+//    modoLocal=false → NO se usa localStorage como fuente de verdad.
+// ═══════════════════════════════════════════════════════════
+let _unsubscribers = []; // guardar referencias para poder cancelar listeners
+
 async function cargarTodo() {
-  const [ps, vs, cs, ms] = await Promise.all([
-    db.collection('productos').orderBy('nombre').get(),
-    db.collection('ventas').orderBy('fecha','desc').limit(200).get(),
-    db.collection('compras').orderBy('fecha','desc').limit(100).get(),
-    db.collection('movimientos').orderBy('fecha','desc').limit(200).get()
-  ]);
-  productos   = ps.docs.map(d => ({id:d.id, ...d.data()}));
-  ventas      = vs.docs.map(d => ({id:d.id, ...d.data()}));
-  compras     = cs.docs.map(d => ({id:d.id, ...d.data()}));
-  movimientos = ms.docs.map(d => ({id:d.id, ...d.data()}));
-  guardarLocal(); // cachear en localStorage
-  console.log(`[Firebase] Cargado: ${productos.length} productos, ${ventas.length} ventas`);
+  if (modoLocal || !db) {
+    // Fallback local sin Firebase
+    const [ps, vs, cs, ms] = await Promise.all([
+      db.collection('productos').orderBy('nombre').get(),
+      db.collection('ventas').orderBy('fecha','desc').limit(200).get(),
+      db.collection('compras').orderBy('fecha','desc').limit(100).get(),
+      db.collection('movimientos').orderBy('fecha','desc').limit(200).get()
+    ]);
+    productos   = ps.docs.map(d => ({id:d.id, ...d.data()}));
+    ventas      = vs.docs.map(d => ({id:d.id, ...d.data()}));
+    compras     = cs.docs.map(d => ({id:d.id, ...d.data()}));
+    movimientos = ms.docs.map(d => ({id:d.id, ...d.data()}));
+    guardarLocal();
+    console.log(`[Firebase] Cargado (one-time): ${productos.length} productos, ${ventas.length} ventas`);
+    return;
+  }
+
+  // ✅ Cancelar listeners anteriores si los hay
+  _unsubscribers.forEach(u => u && u());
+  _unsubscribers = [];
+
+  // ── Promesas de primera carga ── para saber cuándo el UI puede renderizar
+  let resolveProductos, resolveVentas, resolveCompras, resolveMovimientos;
+  const pProductos   = new Promise(r => resolveProductos   = r);
+  const pVentas      = new Promise(r => resolveVentas      = r);
+  const pCompras     = new Promise(r => resolveCompras     = r);
+  const pMovimientos = new Promise(r => resolveMovimientos = r);
+
+  // ── PRODUCTOS ──
+  const u1 = db.collection('productos').orderBy('nombre').onSnapshot(snapshot => {
+    productos = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    resolveProductos();
+    renderStock();
+    renderVentasGrid();
+    renderDashboard();
+    console.log('[RT] productos actualizados:', productos.length);
+  }, err => { console.error('[RT] productos error:', err); resolveProductos(); });
+
+  // ── VENTAS ──
+  const u2 = db.collection('ventas').orderBy('fecha','desc').limit(200).onSnapshot(snapshot => {
+    ventas = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    resolveVentas();
+    renderHistorial();
+    renderDashboard();
+    console.log('[RT] ventas actualizadas:', ventas.length);
+  }, err => { console.error('[RT] ventas error:', err); resolveVentas(); });
+
+  // ── COMPRAS ──
+  const u3 = db.collection('compras').orderBy('fecha','desc').limit(100).onSnapshot(snapshot => {
+    compras = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    resolveCompras();
+    cargarCompras();
+    console.log('[RT] compras actualizadas:', compras.length);
+  }, err => { console.error('[RT] compras error:', err); resolveCompras(); });
+
+  // ── MOVIMIENTOS (CAJA) ──
+  const u4 = db.collection('movimientos').orderBy('fecha','desc').limit(200).onSnapshot(snapshot => {
+    movimientos = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    resolveMovimientos();
+    renderCaja();
+    console.log('[RT] movimientos actualizados:', movimientos.length);
+  }, err => { console.error('[RT] movimientos error:', err); resolveMovimientos(); });
+
+  // ── CLIENTES ──
+  const u5 = db.collection('clientes').orderBy('nombre').onSnapshot(snapshot => {
+    clientes = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    renderClientes();
+    // Actualizar datalist de autocomplete
+    const cliDl = document.getElementById('clientes-list');
+    if (cliDl) cliDl.innerHTML = clientes.map(c => `<option value="${c.nombre}">`).join('');
+    console.log('[RT] clientes actualizados:', clientes.length);
+  }, err => { console.error('[RT] clientes error:', err); });
+
+  // ── REMITOS ──
+  const u6 = db.collection('remitos').orderBy('fecha','desc').limit(100).onSnapshot(snapshot => {
+    remitos = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+    renderRemitos();
+    console.log('[RT] remitos actualizados:', remitos.length);
+  }, err => { console.error('[RT] remitos error:', err); });
+
+  _unsubscribers = [u1, u2, u3, u4, u5, u6];
+
+  // Esperar que todos los listeners hayan recibido su primer batch
+  await Promise.all([pProductos, pVentas, pCompras, pMovimientos]);
+  console.log('[Firebase] ✅ Listeners en tiempo real activos. modoLocal=false → localStorage ignorado como fuente de verdad.');
 }
 
 async function saveDoc(col, data, id=null) {
@@ -1201,16 +1341,22 @@ async function precargarCatalogo() {
 }
 
 // ══════════════════════════════════════════════════════════
-// ✅ FIX #7: LOCAL STORAGE — solo como caché, fuente de verdad = Firebase
+// ✅ FIX #7: LOCAL STORAGE — solo como caché offline
+//    Con Firebase activo: caché secundario, NO fuente de verdad
+//    Sin Firebase: única fuente de persistencia
 // ══════════════════════════════════════════════════════════
 function guardarLocal() {
+  // Con Firebase activo y onSnapshot corriendo, localStorage es solo caché de respaldo.
+  // NO bloquear el flujo si falla.
   try {
     localStorage.setItem('mallavia_productos',   JSON.stringify(productos));
-    localStorage.setItem('mallavia_ventas',      JSON.stringify(ventas));
-    localStorage.setItem('mallavia_compras',     JSON.stringify(compras));
-    localStorage.setItem('mallavia_movimientos', JSON.stringify(movimientos));
+    localStorage.setItem('mallavia_ventas',      JSON.stringify(ventas.slice(0, 200)));
+    localStorage.setItem('mallavia_compras',     JSON.stringify(compras.slice(0, 100)));
+    localStorage.setItem('mallavia_movimientos', JSON.stringify(movimientos.slice(0, 200)));
+    // remitos no se cachean localmente — siempre desde Firebase
   } catch(e) {
-    console.warn('[LocalStorage] No se pudo guardar:', e.message);
+    console.warn('[LocalStorage] No se pudo guardar (quota excedida o privado):', e.message);
+    // No propagar — app sigue funcionando via Firebase
   }
 }
 
@@ -1238,6 +1384,7 @@ function showPage(p) {
   if (p === 'dashboard') renderDashboard();
   if (p === 'stock')     renderStock();
   if (p === 'historial') renderHistorial();
+  if (p === 'remitos')   renderRemitos();
   if (p === 'caja')      renderCaja();
   if (p === 'compras')   { cargarCompras(); if (!lineasCompra.length) addLineaCompra(); }
   if (p === 'ventas')    renderVentasGrid();
@@ -1630,7 +1777,8 @@ async function guardarProducto() {
   const nombre = document.getElementById('prod-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio','error'); return; }
   const precio = parseFloat(document.getElementById('prod-precio').value)||0;
-  const stock  = parseInt(document.getElementById('prod-stock').value)||0;
+  // ✅ FIX #3: parseFloat en lugar de parseInt para evitar pérdida de decimales
+  const stock  = parseFloat(document.getElementById('prod-stock').value)||0;
   if (!precio) { toast('Completá el precio','error'); return; }
 
   const data = {
@@ -1642,7 +1790,7 @@ async function guardarProducto() {
     precioCaja: parseFloat(document.getElementById('prod-precioCaja').value)||0,
     costo:    parseFloat(document.getElementById('prod-costo').value)||0,
     stock,
-    stockMin: parseInt(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT,
+    stockMin: parseFloat(document.getElementById('prod-stock-min').value)||STOCK_MIN_DEFAULT,
     proveedorHabitual: document.getElementById('prod-proveedor').value.trim()
   };
 
@@ -1672,7 +1820,7 @@ function abrirAjuste(id, nombre, actual) {
 
 async function confirmarAjuste() {
   const id  = document.getElementById('ajuste-id').value;
-  const qty = parseInt(document.getElementById('ajuste-qty').value)||0;
+  const qty = parseFloat(document.getElementById('ajuste-qty').value)||0;
   await updateDoc('productos', id, { stock: qty });
   const p = productos.find(x => x.id===id);
   if (p) p.stock = qty;
@@ -1731,7 +1879,7 @@ function importarExcel(input) {
           if (!nombre || nombre.toLowerCase()==='total' || nombre.toLowerCase()==='saldo') break;
           const botella = cb!==-1 ? parseFloat(row[cb])||0 : 0;
           const caja    = cj!==-1 ? parseFloat(row[cj])||0 : 0;
-          const stock   = cs!==-1 ? parseInt(row[cs])||0   : 0;
+          const stock   = cs!==-1 ? parseFloat(row[cs])||0   : 0;
           const costo   = cc!==-1 ? parseFloat(row[cc])||0  : 0;
           if (!botella && !caja) continue;
           filas.push({ nombre, precio:botella||Math.round(caja/6), precioCaja:caja, costo, stock,
@@ -1753,7 +1901,7 @@ function importarExcel(input) {
           const precio = parseFloat(String(row[cp]||'0').replace(/[^\d.]/g,''))||0;
           if (!nombre || !precio || nombre.toLowerCase()==='total') return null;
           return { nombre, precio, costo:cco?parseFloat(row[cco])||0:0,
-            stock:cst?parseInt(row[cst])||0:0, tipo:adivinarTipo(nombre),
+            stock:cst?parseFloat(row[cst])||0:0, tipo:adivinarTipo(nombre),
             bodega:adivinarBodega(nombre), varietal:adivinarVarietal(nombre), stockMin:STOCK_MIN_DEFAULT };
         }).filter(Boolean);
       }
@@ -1834,7 +1982,7 @@ function renderLineasCompra() {
         <option value="">Seleccionar producto</option>
         ${productos.map(p => `<option value="${p.id}" ${l.prodId===p.id?'selected':''}>${p.nombre}</option>`).join('')}
       </select>
-      <input type="number" placeholder="Cant." value="${l.qty}" min="1" onchange="lineasCompra[${i}].qty=parseInt(this.value)||1; actualizarSubtotalCompra()" style="font-size:12px;">
+      <input type="number" placeholder="Cant." value="${l.qty}" min="1" onchange="lineasCompra[${i}].qty=parseFloat(this.value)||1; actualizarSubtotalCompra()" style="font-size:12px;">
       <input type="number" placeholder="P.Costo" value="${l.precio||''}" onchange="lineasCompra[${i}].precio=parseFloat(this.value)||0; actualizarSubtotalCompra()" style="font-size:12px;">
       <span style="font-size:11px; color:var(--text-muted); text-align:right;">${l.precio && l.qty ? formatPeso(l.precio * l.qty) : ''}</span>
       <button class="btn btn-danger btn-sm" onclick="lineasCompra.splice(${i},1); renderLineasCompra()">✕</button>
@@ -1917,6 +2065,21 @@ async function registrarCompra() {
   const id = await saveDoc('compras', compra);
   compra.id = id;
   compras.unshift(compra);
+
+  // ✅ FIX #1: Guardar también en colección 'remitos' con addDoc (ID único)
+  // Esto alimenta la tab de Remitos y permite eliminarlos individualmente
+  if (db && !modoLocal) {
+    try {
+      await db.collection('remitos').add({
+        proveedor: compra.proveedor,
+        remito: compra.remito || '',
+        fecha: new Date().toISOString(),
+        items: compra.items.map(i => ({ prodId: i.prodId, nombre: i.nombre, qty: i.qty, precio: i.precio })),
+        compraId: id,
+        _createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) { console.warn('[Remitos] No se pudo crear remito asociado:', e.message); }
+  }
 
   // Actualizar stock y precio de compra
   for (const item of items) {
@@ -2197,25 +2360,25 @@ async function eliminarVenta(id) {
     );
   }
 
-  // 3. 💰 Ajustar caja — buscar y eliminar el movimiento de ingreso asociado
-  // También crear un contra-movimiento para que quede registrado
+  // 3. 💰 FIX #5 — Ajustar caja SOLO si la venta NO era cuenta corriente
+  //    Si era cuenta corriente, el dinero nunca entró a caja → no restar
   if (venta.pago !== 'cuenta-corriente') {
-    // Buscar el movimiento de ingreso correspondiente
+    // Buscar el movimiento de ingreso correspondiente a esta venta
     const movIdx = movimientos.findIndex(m => m.ventaId === id || 
       (m.tipo === 'ingreso' && m.concepto && m.concepto.includes('Venta') && Math.abs((m.monto||0) - (venta.total||0)) < 1));
     
     if (movIdx >= 0) {
-      // Eliminar el movimiento original
+      // Eliminar el movimiento original de ingreso
       const movOrig = movimientos[movIdx];
       await deleteDoc('movimientos', movOrig.id);
       movimientos.splice(movIdx, 1);
     } else {
-      // Si no encontramos el movimiento original, crear contra-movimiento
+      // No encontramos el movimiento original → crear contra-movimiento de egreso
       const contraMovimiento = {
         fecha: new Date().toISOString(),
         concepto: `Anulación venta #${id} - ${venta.cliente||'cliente'}`,
         monto: venta.total || 0,
-        tipo: 'egreso',
+        tipo: 'egreso',   // ✅ saldo = saldo - venta.total
         medio: venta.pago || 'efectivo',
         ventaId: id
       };
@@ -2224,6 +2387,7 @@ async function eliminarVenta(id) {
       movimientos.unshift(contraMovimiento);
     }
   }
+  // ⚠ Si era cuenta corriente: NO tocamos caja (venta.pago === 'cuenta-corriente')
 
   // 4. Eliminar en Firestore
   await deleteDoc('ventas', id);
@@ -2663,47 +2827,95 @@ function generarBoleta(venta, tipo = 'C') {
 }
 
 // ══════════════════════════════════════════════════════════
-// ══ PATCH: cargarTodo — incluir clientes en la carga inicial ══
+// ══ PATCH: iniciarApp extendida — cargar CCs en modo local ══
 // ══════════════════════════════════════════════════════════
-const _cargarTodoOriginal = cargarTodo;
-async function cargarTodo() {
-  await _cargarTodoOriginal();
-  await cargarClientes();
-  // Pre-cargar CCs de clientes
-  for (const cli of clientes) {
-    await obtenerCC(cli.id);
+// En modo Firebase los clientes ya se sincronizan via onSnapshot (dentro de cargarTodo).
+// En modo local, los cargamos manualmente después de cargarTodo.
+const _iniciarAppOriginal = iniciarApp;
+async function iniciarApp() {
+  await _iniciarAppOriginal();
+  // Post-init en modo local: cargar clientes y CCs
+  if (modoLocal || !db) {
+    await cargarClientes();
+    for (const cli of clientes) {
+      await obtenerCC(cli.id);
+    }
+    renderClientes();
   }
 }
+// ═══════════════════════════════════════════════════
+// FIX #1 — REMITOS: usar addDoc (ID único por remito)
+// ═══════════════════════════════════════════════════
 async function cargarRemitoSimple(remito) {
   try {
-    // 1. Guardar remito en Firebase
-    await saveDoc('remitos', {
-      ...remito,
-      fecha: new Date().toISOString()
-    });
+    // ✅ FIX #1: addDoc genera ID único — nunca sobrescribe remitos anteriores
+    let remitoId;
+    if (db && !modoLocal) {
+      const ref = await db.collection('remitos').add({
+        ...remito,
+        fecha: new Date().toISOString(),
+        _createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      remitoId = ref.id;
+    } else {
+      remitoId = 'local_' + Date.now();
+    }
 
     // 2. Actualizar stock
     for (const item of remito.items) {
       const prod = productos.find(p => p.id === item.prodId);
-
       if (prod) {
         prod.stock = (prod.stock || 0) + item.qty;
-
-        await updateDoc('productos', prod.id, {
-          stock: prod.stock
-        });
+        await updateDoc('productos', prod.id, { stock: prod.stock });
       }
     }
 
     guardarLocal();
     renderStock();
-
     toast('📦 Remito cargado y stock actualizado', 'success');
 
   } catch (e) {
     console.error(e);
     toast('Error cargando remito', 'error');
   }
+}
+
+// ═══════════════════════════════════════════════════
+// FIX #2 — ELIMINAR REMITO: restar stock + Firestore
+// ═══════════════════════════════════════════════════
+async function eliminarRemito(id) {
+  if (!id) return;
+
+  // Buscar el remito (en remitos guardados via onSnapshot o en compras)
+  let remito = null;
+  if (db && !modoLocal) {
+    try {
+      const doc = await db.collection('remitos').doc(id).get();
+      if (doc.exists) remito = { id: doc.id, ...doc.data() };
+    } catch(e) { console.error('[eliminarRemito]', e); }
+  }
+
+  if (!remito) { toast('Remito no encontrado', 'error'); return; }
+
+  const itemsText = (remito.items || []).map(i => `${i.qty}x ${i.nombre || i.prodId}`).join(', ');
+  if (!confirm(`¿Eliminar este remito?\n\nProveedor: ${remito.proveedor || '—'}\nProductos: ${itemsText}\n\n⚠ Se restará el stock correspondiente.`)) return;
+
+  // 1. Restar stock (inverso de cargar remito)
+  for (const item of (remito.items || [])) {
+    const prod = productos.find(p => p.id === item.prodId);
+    if (prod) {
+      prod.stock = Math.max(0, (prod.stock || 0) - (item.qty || 0));
+      await updateDoc('productos', prod.id, { stock: prod.stock });
+    }
+  }
+
+  // 2. Eliminar documento en Firestore
+  await deleteDoc('remitos', id);
+
+  guardarLocal();
+  renderStock();
+  renderVentasGrid();
+  toast('🗑 Remito eliminado y stock ajustado', 'success');
 }
 </script>
 </body>
